@@ -4,15 +4,26 @@ mutation VerifyOrder($input: OrderInput!) {
   verifyOrder(input: $input) {
     isValid
     errorMessage
-    quantity
     customerLatitude
     customerLongitude
-    product {
-      id
-      name
+    items {
+      productId
+      productName
+      quantity
       unitPriceCents
-      weightGrams
+      subtotalCents
+      shippingCostCents
+      canFulfill
+      errorMessage
+      shipments {
+        warehouseId
+        warehouseName
+        quantity
+        distanceKm
+        shippingCostCents
+      }
     }
+    subtotalCents
     discount {
       originalAmountCents
       discountAmountCents
@@ -20,13 +31,7 @@ mutation VerifyOrder($input: OrderInput!) {
       discountPercentage
       tierName
     }
-    shipments {
-      warehouseId
-      warehouseName
-      quantity
-      distanceKm
-      shippingCostCents
-    }
+    totalShippingCostCents
     shippingValidity {
       isValid
       shippingCostCents
@@ -35,9 +40,8 @@ mutation VerifyOrder($input: OrderInput!) {
       maxAllowedShippingCents
       overLimitCents
     }
-    totalShippingCostCents
     grandTotalCents
-    subtotalCents
+    totalQuantity
   }
 }
 
@@ -45,23 +49,36 @@ mutation SubmitOrder($input: OrderInput!) {
   submitOrder(input: $input) {
     id
     orderNumber
-    quantity
     customerLatitude
     customerLongitude
     subtotalCents
     discountCents
     shippingCents
     totalCents
+    totalQuantity
     status
     createdAt
-    shipments {
+    items {
       id
-      warehouseId
-      warehouseName
+      productId
       quantity
-      distanceKm
-      shippingCents
+      unitPriceCents
+      subtotalCents
+      product {
+        id
+        name
+        sku
+      }
+      shipments {
+        id
+        warehouseId
+        warehouseName
+        warehouseLatitude
+        warehouseLongitude
+        quantity
+        distanceKm
+        shippingCents
+      }
     }
   }
 }
-

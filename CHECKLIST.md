@@ -279,9 +279,9 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
-## Phase 7.9: Multi-Product & Multi-Item Architecture 🟡
+## Phase 7.9: Multi-Product & Multi-Item Architecture ✅
 
-> **Critical Refactor:** Backend complete! Frontend updates pending.
+> **Critical Refactor:** Complete! Backend, frontend, and tests all updated.
 
 ### 7.9.1 Database Schema Migration ✅
 
@@ -312,23 +312,23 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 - [x] Update warehouse/order queries
 - [x] _(Combined into single commit with 7.9.1)_
 
-### 7.9.4 Frontend Updates
+### 7.9.4 Frontend Updates ✅
 
-- [ ] Fetch products list on load
-- [ ] Add "Add Item" UI in NewOrderTab
-- [ ] Support multiple products before verification
-- [ ] Update order display for items
-- [ ] Update StockTab for stock per product
-- [ ] Regenerate GraphQL types
-- [ ] **COMMIT:** `feat(web): update frontend for multi-item orders`
+- [x] Fetch products list on load
+- [x] Add "Add Item" UI in NewOrderTab
+- [x] Support multiple products before verification
+- [x] Update order display for items
+- [x] Update StockTab for stock per product
+- [x] Regenerate GraphQL types
+- [x] **COMMIT:** `feat(web): update frontend for multi-item orders`
 
-### 7.9.5 Testing
+### 7.9.5 Testing ✅
 
 - [x] Update existing tests for new schema
-- [ ] Multi-product warehouse stock tests
-- [ ] Multi-item order verification tests
-- [ ] Greedy algorithm per product tests
-- [ ] **COMMIT:** `test: add multi-product order tests`
+- [x] Multi-product warehouse stock tests
+- [x] Multi-item order verification tests
+- [x] Greedy algorithm per product tests
+- [x] **COMMIT:** `test: add multi-product order tests`
 
 ---
 
@@ -413,7 +413,7 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 | 5. Domain Logic      | ✅ Complete    | 1/1      |
 | 6. GraphQL API       | ✅ Complete    | 1/1      |
 | 7. Frontend          | ✅ Complete    | 4/4      |
-| 7.9 Multi-Product    | 🟡 In Progress | 1/2      |
+| 7.9 Multi-Product    | ✅ Complete    | 2/2      |
 | 8. DevOps            | ⬜ Not Started | 0/5      |
 | **Total**            | **72%**        | **13/20**|
 

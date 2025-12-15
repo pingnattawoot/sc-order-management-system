@@ -1,9 +1,10 @@
 /**
  * Stock Management Tab
  *
- * Displays warehouse inventory levels
+ * Displays warehouse inventory levels per product
  */
 
+import { useState, useMemo } from 'react';
 import { WarehouseMap } from '@/components/map';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useGetWarehousesQuery, type Warehouse } from '@/graphql';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useGetWarehousesQuery, useGetProductsQuery, type Warehouse, type Product } from '@/graphql';
 
 // Helper to format numbers with comma separators
 const formatNumber = (num: number | null | undefined) => {
@@ -47,35 +55,87 @@ function StockBar({ stock, maxStock }: { stock: number; maxStock: number }) {
   );
 }
 
+// Helper to compute total stock for a warehouse (optionally filtered by product)
+const getWarehouseStock = (warehouse: Warehouse, productId?: string | null): number => {
+  if (!warehouse.stocks) return 0;
+  if (productId) {
+    const stock = warehouse.stocks.find((s) => s?.productId === productId);
+    return stock?.quantity ?? 0;
+  }
+  return warehouse.stocks.reduce((sum, s) => sum + (s?.quantity ?? 0), 0);
+};
+
 export function StockTab() {
-  const { data, loading } = useGetWarehousesQuery();
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  const warehouses = (data?.warehouses ?? []) as Warehouse[];
-  const totalStock = data?.totalStock ?? 0;
-  const maxStock = Math.max(...warehouses.map((w) => w.stock ?? 0), 1);
+  const { data: warehouseData, loading: warehousesLoading } = useGetWarehousesQuery();
+  const { data: productData, loading: productsLoading } = useGetProductsQuery();
 
-  // Calculate stats
-  const avgStock = warehouses.length > 0
-    ? Math.round(totalStock / warehouses.length)
-    : 0;
-  const lowStockWarehouses = warehouses.filter((w) => (w.stock ?? 0) < 200).length;
+  const warehouses = useMemo(() => (warehouseData?.warehouses ?? []) as Warehouse[], [warehouseData?.warehouses]);
+  const products = useMemo(() => (productData?.products ?? []) as Product[], [productData?.products]);
+  const loading = warehousesLoading || productsLoading;
+
+  // Calculate stats based on selected product filter
+  const stats = useMemo(() => {
+    const stockValues = warehouses.map((w) => getWarehouseStock(w, selectedProductId));
+    const totalStock = stockValues.reduce((sum, s) => sum + s, 0);
+    const avgStock = warehouses.length > 0 ? Math.round(totalStock / warehouses.length) : 0;
+    const lowStockWarehouses = stockValues.filter((s) => s < 200).length;
+    const maxStock = Math.max(...stockValues, 1);
+
+    return { totalStock, avgStock, lowStockWarehouses, maxStock };
+  }, [warehouses, selectedProductId]);
+
+  // Get stock for each warehouse based on filter
+  const warehouseStocks = useMemo(() => {
+    return warehouses.map((w) => ({
+      warehouse: w,
+      stock: getWarehouseStock(w, selectedProductId),
+    }));
+  }, [warehouses, selectedProductId]);
+
+  const selectedProduct = products.find((p) => p.id === selectedProductId);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold">Stock Management</h2>
-        <p className="text-muted-foreground">
-          Monitor inventory levels across all warehouses
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Stock Management</h2>
+          <p className="text-muted-foreground">
+            Monitor inventory levels across all warehouses
+          </p>
+        </div>
+        {/* Product Filter */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Filter by:</span>
+          <Select
+            value={selectedProductId ?? 'all'}
+            onValueChange={(value) => setSelectedProductId(value === 'all' ? null : value)}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All Products" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Products</SelectItem>
+              {products.map((p) => (
+                <SelectItem key={p.id} value={p.id!}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Global Stock</CardDescription>
-            <CardTitle className="text-3xl">{formatNumber(totalStock)}</CardTitle>
+            <CardDescription>
+              {selectedProduct ? `${selectedProduct.name} Stock` : 'Total Global Stock'}
+            </CardDescription>
+            <CardTitle className="text-3xl">{formatNumber(stats.totalStock)}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">units available</p>
@@ -95,7 +155,7 @@ export function StockTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Average Stock</CardDescription>
-            <CardTitle className="text-3xl">{formatNumber(avgStock)}</CardTitle>
+            <CardTitle className="text-3xl">{formatNumber(stats.avgStock)}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">units per warehouse</p>
@@ -106,8 +166,8 @@ export function StockTab() {
           <CardHeader className="pb-2">
             <CardDescription>Low Stock Alerts</CardDescription>
             <CardTitle className="text-3xl">
-              {lowStockWarehouses > 0 ? (
-                <span className="text-red-500">{lowStockWarehouses}</span>
+              {stats.lowStockWarehouses > 0 ? (
+                <span className="text-red-500">{stats.lowStockWarehouses}</span>
               ) : (
                 <span className="text-green-500">0</span>
               )}
@@ -137,7 +197,9 @@ export function StockTab() {
         <CardHeader>
           <CardTitle>Warehouse Inventory</CardTitle>
           <CardDescription>
-            Current stock levels by location
+            {selectedProduct 
+              ? `Stock levels for ${selectedProduct.name}` 
+              : 'Current stock levels by location (all products)'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -149,14 +211,15 @@ export function StockTab() {
                 <TableRow>
                   <TableHead>Warehouse</TableHead>
                   <TableHead>Location</TableHead>
+                  {!selectedProductId && <TableHead>Products</TableHead>}
                   <TableHead className="text-right">Current Stock</TableHead>
                   <TableHead>Level</TableHead>
                   <TableHead>Capacity</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {warehouses.map((warehouse) => {
-                  const level = getStockLevel(warehouse.stock ?? 0);
+                {warehouseStocks.map(({ warehouse, stock }) => {
+                  const level = getStockLevel(stock);
                   return (
                     <TableRow key={warehouse.id}>
                       <TableCell className="font-medium">{warehouse.name}</TableCell>
@@ -164,14 +227,23 @@ export function StockTab() {
                         {parseFloat(warehouse.latitude ?? '0').toFixed(2)}°,{' '}
                         {parseFloat(warehouse.longitude ?? '0').toFixed(2)}°
                       </TableCell>
+                      {!selectedProductId && (
+                        <TableCell className="text-muted-foreground text-sm">
+                          {warehouse.stocks?.map((s) => (
+                            <div key={s?.productId}>
+                              {s?.product?.name}: {formatNumber(s?.quantity)}
+                            </div>
+                          ))}
+                        </TableCell>
+                      )}
                       <TableCell className="text-right font-bold">
-                        {formatNumber(warehouse.stock)}
+                        {formatNumber(stock)}
                       </TableCell>
                       <TableCell>
                         <Badge className={level.color}>{level.label}</Badge>
                       </TableCell>
                       <TableCell>
-                        <StockBar stock={warehouse.stock ?? 0} maxStock={maxStock} />
+                        <StockBar stock={stock} maxStock={stats.maxStock} />
                       </TableCell>
                     </TableRow>
                   );
@@ -184,4 +256,3 @@ export function StockTab() {
     </div>
   );
 }
-

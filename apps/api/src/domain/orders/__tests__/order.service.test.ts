@@ -343,6 +343,140 @@ describe.skipIf(SKIP_DB_TESTS)('OrderService (Integration)', () => {
       }
     });
   });
+
+  describe('multi-product warehouse stock', () => {
+    it('should only reduce stock for ordered product', async () => {
+      const products = await prisma.product.findMany({ take: 2 });
+      if (products.length < 2) {
+        console.log('Skipping multi-product stock test - not enough products');
+        return;
+      }
+
+      const product1 = products[0]!;
+      const product2 = products[1]!;
+
+      // Get initial stock for product2
+      const product2StockBefore = await prisma.warehouseStock.findMany({
+        where: { productId: product2.id },
+      });
+      const product2TotalBefore = product2StockBefore.reduce((sum, s) => sum + s.quantity, 0);
+
+      // Order only product1
+      await service.submitOrder(
+        [{ productId: product1.id, quantity: 10 }],
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
+
+      // Product2 stock should be unchanged
+      const product2StockAfter = await prisma.warehouseStock.findMany({
+        where: { productId: product2.id },
+      });
+      const product2TotalAfter = product2StockAfter.reduce((sum, s) => sum + s.quantity, 0);
+
+      expect(product2TotalAfter).toBe(product2TotalBefore);
+    });
+
+    it('should track stock per product per warehouse independently', async () => {
+      const products = await prisma.product.findMany({ take: 2 });
+      if (products.length < 2) {
+        console.log('Skipping multi-product stock test - not enough products');
+        return;
+      }
+
+      const product1 = products[0]!;
+      const product2 = products[1]!;
+
+      // Order different quantities of each product
+      await service.submitOrder(
+        [
+          { productId: product1.id, quantity: 15 },
+          { productId: product2.id, quantity: 8 },
+        ],
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
+
+      // Check stocks were reduced by correct amounts
+      const product1Stock = await prisma.warehouseStock.findMany({
+        where: { productId: product1.id },
+      });
+      const product1Total = product1Stock.reduce((sum, s) => sum + s.quantity, 0);
+
+      const product2Stock = await prisma.warehouseStock.findMany({
+        where: { productId: product2.id },
+      });
+      const product2Total = product2Stock.reduce((sum, s) => sum + s.quantity, 0);
+
+      // Each product started with 600 (6 warehouses × 100)
+      expect(product1Total).toBe(600 - 15);
+      expect(product2Total).toBe(600 - 8);
+    });
+
+    it('should correctly aggregate discount across multiple products', async () => {
+      const products = await prisma.product.findMany({ take: 2 });
+      if (products.length < 2) {
+        console.log('Skipping multi-product discount test - not enough products');
+        return;
+      }
+
+      // Order total 50 units to get 10% discount tier
+      const items: OrderItemInput[] = [
+        { productId: products[0]!.id, quantity: 30 },
+        { productId: products[1]!.id, quantity: 20 },
+      ];
+
+      const quote = await service.verifyOrder(
+        items,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
+
+      // 50 units should get 10% discount
+      expect(quote.discount.discountPercentage).toBe(10);
+    });
+
+    it('should fail if one product has insufficient stock', async () => {
+      // Drain stock for the test product
+      await prisma.warehouseStock.updateMany({
+        where: { productId: testProductId },
+        data: { quantity: 5 }, // Only 30 total (6 × 5)
+      });
+
+      const quote = await service.verifyOrder(
+        [{ productId: testProductId, quantity: 50 }], // More than available
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
+
+      expect(quote.isValid).toBe(false);
+      expect(quote.items[0]!.canFulfill).toBe(false);
+    });
+
+    it('should fulfill from multiple warehouses per product', async () => {
+      // Set varied stock levels
+      const warehouses = await prisma.warehouse.findMany();
+      for (let i = 0; i < warehouses.length; i++) {
+        await prisma.warehouseStock.updateMany({
+          where: {
+            warehouseId: warehouses[i]!.id,
+            productId: testProductId,
+          },
+          data: { quantity: 20 }, // Each warehouse has 20
+        });
+      }
+
+      // Order 50 units - will need multiple warehouses
+      const quote = await service.verifyOrder(
+        [{ productId: testProductId, quantity: 50 }],
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
+
+      expect(quote.isValid).toBe(true);
+      expect(quote.items[0]!.shipments.length).toBeGreaterThan(1);
+    });
+  });
 });
 
 // Unit tests that don't require database

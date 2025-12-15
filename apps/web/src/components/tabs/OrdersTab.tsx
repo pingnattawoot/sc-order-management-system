@@ -2,9 +2,10 @@
  * Orders History Tab
  *
  * Lists all orders with details and map view
+ * Updated for multi-item orders
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { WarehouseMap } from '@/components/map';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -80,15 +81,23 @@ export function OrdersTab() {
   const orders = (ordersData?.orders ?? []) as Order[];
   const warehouses = (warehouseData?.warehouses ?? []) as Warehouse[];
 
-  // Convert order shipments to ShipmentDetail format for map
-  const activeShipments: ShipmentDetail[] = selectedOrder?.shipments?.map((s) => ({
-    __typename: 'ShipmentDetail' as const,
-    warehouseId: s?.warehouseId ?? null,
-    warehouseName: s?.warehouseName ?? null,
-    quantity: s?.quantity ?? null,
-    distanceKm: s?.distanceKm ? parseFloat(s.distanceKm) : null,
-    shippingCostCents: s?.shippingCents ?? null,
-  })) ?? [];
+  // Convert order shipments from all items to ShipmentDetail format for map
+  const selectedOrderItems = selectedOrder?.items;
+  const activeShipments: ShipmentDetail[] = useMemo(() => {
+    if (!selectedOrderItems) return [];
+    
+    // Flatten shipments from all items and convert to ShipmentDetail format
+    return selectedOrderItems.flatMap((item) =>
+      (item?.shipments ?? []).map((s) => ({
+        __typename: 'ShipmentDetail' as const,
+        warehouseId: s?.warehouseId ?? null,
+        warehouseName: s?.warehouseName ?? null,
+        quantity: s?.quantity ?? null,
+        distanceKm: s?.distanceKm ? parseFloat(s.distanceKm) : null,
+        shippingCostCents: s?.shippingCents ?? null,
+      }))
+    );
+  }, [selectedOrderItems]);
 
   // Customer location for selected order
   const customerLocation: [number, number] | null = selectedOrder
@@ -124,6 +133,7 @@ export function OrdersTab() {
                 <TableRow>
                   <TableHead>Order #</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Items</TableHead>
                   <TableHead className="text-right">Qty</TableHead>
                   <TableHead className="text-right">Subtotal</TableHead>
                   <TableHead className="text-right">Discount</TableHead>
@@ -142,7 +152,8 @@ export function OrdersTab() {
                     <TableCell className="text-muted-foreground">
                       {formatDate(order.createdAt)}
                     </TableCell>
-                    <TableCell className="text-right">{formatNumber(order.quantity)}</TableCell>
+                    <TableCell className="text-right">{order.items?.length ?? 0}</TableCell>
+                    <TableCell className="text-right">{formatNumber(order.totalQuantity)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(order.subtotalCents)}</TableCell>
                     <TableCell className="text-right text-green-600">
                       {(order.discountCents ?? 0) > 0 ? `-${formatCurrency(order.discountCents)}` : '-'}
@@ -195,16 +206,52 @@ export function OrdersTab() {
                 fitToShipments={true}
               />
 
+              {/* Order Items */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Order Items</CardTitle>
+                  <CardDescription>
+                    {selectedOrder.items?.length ?? 0} item(s), {formatNumber(selectedOrder.totalQuantity)} units total
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {selectedOrder.items?.map((item, i) => (
+                      <div key={i} className="p-3 bg-muted rounded">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{item?.product?.name ?? 'Unknown Product'}</span>
+                          <span className="font-medium">{formatCurrency(item?.subtotalCents)}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {formatNumber(item?.quantity)} × {formatCurrency(item?.unitPriceCents)}
+                        </div>
+                        {item?.shipments && item.shipments.length > 0 && (
+                          <div className="mt-2 pt-2 border-t space-y-1">
+                            <div className="text-xs font-medium text-muted-foreground">Shipped from:</div>
+                            {item.shipments.map((s, si) => (
+                              <div key={si} className="flex justify-between text-xs text-muted-foreground">
+                                <span>
+                                  {s?.warehouseName} ({formatNumber(Math.round(parseFloat(s?.distanceKm ?? '0')))} km)
+                                </span>
+                                <span>
+                                  {formatNumber(s?.quantity)} units • {formatCurrency(s?.shippingCents)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Order Summary */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">Order Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Quantity</span>
-                    <span>{formatNumber(selectedOrder.quantity)} units</span>
-                  </div>
                   <div className="flex justify-between">
                     <span>Subtotal</span>
                     <span>{formatCurrency(selectedOrder.subtotalCents)}</span>
@@ -223,36 +270,6 @@ export function OrdersTab() {
                   <div className="flex justify-between font-bold text-base">
                     <span>Total</span>
                     <span>{formatCurrency(selectedOrder.totalCents)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Shipment Details */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Shipment Details</CardTitle>
-                  <CardDescription>
-                    Fulfilled from {selectedOrder.shipments?.length ?? 0} warehouse(s)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {selectedOrder.shipments?.map((shipment, i) => (
-                      <div key={i} className="flex justify-between items-center text-sm p-3 bg-muted rounded">
-                        <div>
-                          <span className="font-medium">{shipment?.warehouseName}</span>
-                          <span className="text-muted-foreground ml-2">
-                            ({formatNumber(Math.round(parseFloat(shipment?.distanceKm ?? '0')))} km)
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-medium">{formatNumber(shipment?.quantity)} units</span>
-                          <span className="text-muted-foreground ml-2">
-                            {formatCurrency(shipment?.shippingCents)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -286,4 +303,3 @@ export function OrdersTab() {
     </div>
   );
 }
-

@@ -56,7 +56,7 @@ export type MutationVerifyOrderArgs = {
   input: OrderInput;
 };
 
-/** A completed order */
+/** A completed order with multiple items */
 export type Order = {
   __typename?: 'Order';
   /** When the order was created */
@@ -69,12 +69,10 @@ export type Order = {
   discountCents?: Maybe<Scalars['Int']['output']>;
   /** Unique order identifier */
   id?: Maybe<Scalars['ID']['output']>;
+  /** Order line items */
+  items?: Maybe<Array<OrderItem>>;
   /** Human-readable order number (ORD-XXXXX) */
   orderNumber?: Maybe<Scalars['String']['output']>;
-  /** Total quantity ordered */
-  quantity?: Maybe<Scalars['Int']['output']>;
-  /** Shipments for this order */
-  shipments?: Maybe<Array<OrderShipment>>;
   /** Total shipping cost in cents */
   shippingCents?: Maybe<Scalars['Int']['output']>;
   /** Order status */
@@ -83,50 +81,115 @@ export type Order = {
   subtotalCents?: Maybe<Scalars['Int']['output']>;
   /** Grand total in cents */
   totalCents?: Maybe<Scalars['Int']['output']>;
+  /** Total quantity across all items */
+  totalQuantity?: Maybe<Scalars['Int']['output']>;
   /** When the order was last updated */
   updatedAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
-/** Input for creating or verifying an order */
+/** Input for creating or verifying a multi-item order */
 export type OrderInput = {
+  /** Array of items to order */
+  items: Array<OrderItemInput>;
   /** Customer latitude (-90 to 90) */
   latitude: Scalars['Float']['input'];
   /** Customer longitude (-180 to 180) */
   longitude: Scalars['Float']['input'];
+};
+
+/** A line item in an order */
+export type OrderItem = {
+  __typename?: 'OrderItem';
+  /** When the item was created */
+  createdAt?: Maybe<Scalars['DateTime']['output']>;
+  /** Unique order item identifier */
+  id?: Maybe<Scalars['ID']['output']>;
+  /** Product details */
+  product?: Maybe<OrderItemProduct>;
+  /** Product ID */
+  productId?: Maybe<Scalars['ID']['output']>;
+  /** Quantity ordered */
+  quantity?: Maybe<Scalars['Int']['output']>;
+  /** Shipments fulfilling this item */
+  shipments?: Maybe<Array<OrderShipment>>;
+  /** Item subtotal (unitPrice × quantity) */
+  subtotalCents?: Maybe<Scalars['Int']['output']>;
+  /** Unit price at time of order (cents) */
+  unitPriceCents?: Maybe<Scalars['Int']['output']>;
+};
+
+/** A single item in an order (product + quantity) */
+export type OrderItemInput = {
+  /** ID of the product to order */
+  productId: Scalars['ID']['input'];
   /** Number of units to order (minimum 1) */
   quantity: Scalars['Int']['input'];
 };
 
-/** Order verification/quote result */
+/** Product reference in an order item */
+export type OrderItemProduct = {
+  __typename?: 'OrderItemProduct';
+  /** Product ID */
+  id?: Maybe<Scalars['ID']['output']>;
+  /** Product name */
+  name?: Maybe<Scalars['String']['output']>;
+  /** Product price in cents */
+  priceInCents?: Maybe<Scalars['Int']['output']>;
+  /** Product SKU */
+  sku?: Maybe<Scalars['String']['output']>;
+};
+
+/** Quote for a single item in the order */
+export type OrderItemQuote = {
+  __typename?: 'OrderItemQuote';
+  /** Whether this item can be fulfilled */
+  canFulfill?: Maybe<Scalars['Boolean']['output']>;
+  /** Error message if item cannot be fulfilled */
+  errorMessage?: Maybe<Scalars['String']['output']>;
+  /** Product ID */
+  productId?: Maybe<Scalars['ID']['output']>;
+  /** Product name */
+  productName?: Maybe<Scalars['String']['output']>;
+  /** Quantity requested */
+  quantity?: Maybe<Scalars['Int']['output']>;
+  /** Shipment allocations for this item */
+  shipments?: Maybe<Array<ShipmentDetail>>;
+  /** Shipping cost for this item */
+  shippingCostCents?: Maybe<Scalars['Int']['output']>;
+  /** Item subtotal (unitPrice × quantity) */
+  subtotalCents?: Maybe<Scalars['Int']['output']>;
+  /** Unit price in cents */
+  unitPriceCents?: Maybe<Scalars['Int']['output']>;
+};
+
+/** Order verification/quote result (multi-item) */
 export type OrderQuote = {
   __typename?: 'OrderQuote';
   /** Customer latitude */
   customerLatitude?: Maybe<Scalars['Float']['output']>;
   /** Customer longitude */
   customerLongitude?: Maybe<Scalars['Float']['output']>;
-  /** Discount calculation */
+  /** Discount calculation (applied to total order) */
   discount?: Maybe<DiscountResult>;
   /** Error message if not valid */
   errorMessage?: Maybe<Scalars['String']['output']>;
   /** Grand total in cents (discounted subtotal + shipping) */
   grandTotalCents?: Maybe<Scalars['Int']['output']>;
-  /** Whether the order can be fulfilled */
+  /** Whether the entire order can be fulfilled */
   isValid?: Maybe<Scalars['Boolean']['output']>;
-  /** Product being ordered */
-  product?: Maybe<QuoteProduct>;
-  /** Requested quantity */
-  quantity?: Maybe<Scalars['Int']['output']>;
-  /** Shipment allocations from warehouses */
-  shipments?: Maybe<Array<ShipmentDetail>>;
+  /** Quotes for each item in the order */
+  items?: Maybe<Array<OrderItemQuote>>;
   /** Shipping cost validity (15% rule) */
   shippingValidity?: Maybe<ShippingValidity>;
-  /** Subtotal before discount in cents (alias for discount.originalAmountCents) */
+  /** Order subtotal before discount */
   subtotalCents?: Maybe<Scalars['Int']['output']>;
+  /** Total quantity across all items */
+  totalQuantity?: Maybe<Scalars['Int']['output']>;
   /** Total shipping cost in cents */
   totalShippingCostCents?: Maybe<Scalars['Int']['output']>;
 };
 
-/** A shipment record for an order */
+/** A shipment record for an order item */
 export type OrderShipment = {
   __typename?: 'OrderShipment';
   /** When the shipment was created */
@@ -135,12 +198,18 @@ export type OrderShipment = {
   distanceKm?: Maybe<Scalars['Decimal']['output']>;
   /** Unique shipment identifier */
   id?: Maybe<Scalars['ID']['output']>;
+  /** ID of the order item this shipment fulfills */
+  orderItemId?: Maybe<Scalars['ID']['output']>;
   /** Number of units in this shipment */
   quantity?: Maybe<Scalars['Int']['output']>;
   /** Shipping cost in cents */
   shippingCents?: Maybe<Scalars['Int']['output']>;
   /** ID of the source warehouse */
   warehouseId?: Maybe<Scalars['ID']['output']>;
+  /** Warehouse latitude */
+  warehouseLatitude?: Maybe<Scalars['Decimal']['output']>;
+  /** Warehouse longitude */
+  warehouseLongitude?: Maybe<Scalars['Decimal']['output']>;
   /** Name of the source warehouse */
   warehouseName?: Maybe<Scalars['String']['output']>;
 };
@@ -177,21 +246,21 @@ export type Product = {
 
 export type Query = {
   __typename?: 'Query';
-  /** Get a single order by ID */
+  /** Get a single order by ID with items and shipments */
   order?: Maybe<Order>;
   /** Get a single order by order number */
   orderByNumber?: Maybe<Order>;
-  /** Get all orders (newest first) */
+  /** Get all orders with items and shipments (newest first) */
   orders?: Maybe<Array<Order>>;
   /** Get a single product by ID */
   product?: Maybe<Product>;
   /** Get all available products */
   products?: Maybe<Array<Product>>;
-  /** Get total stock across all warehouses */
+  /** Get total stock across all warehouses for all products */
   totalStock?: Maybe<Scalars['Int']['output']>;
-  /** Get a single warehouse by ID */
+  /** Get a single warehouse by ID with stock levels */
   warehouse?: Maybe<Warehouse>;
-  /** Get all warehouses with current stock levels */
+  /** Get all warehouses with current stock levels per product */
   warehouses?: Maybe<Array<Warehouse>>;
 };
 
@@ -216,21 +285,13 @@ export type QueryProductArgs = {
 };
 
 
-export type QueryWarehouseArgs = {
-  id: Scalars['ID']['input'];
+export type QueryTotalStockArgs = {
+  productId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-/** Product information in a quote */
-export type QuoteProduct = {
-  __typename?: 'QuoteProduct';
-  /** Product ID */
-  id?: Maybe<Scalars['ID']['output']>;
-  /** Product name */
-  name?: Maybe<Scalars['String']['output']>;
-  /** Unit price in cents */
-  unitPriceCents?: Maybe<Scalars['Int']['output']>;
-  /** Weight in grams */
-  weightGrams?: Maybe<Scalars['Int']['output']>;
+
+export type QueryWarehouseArgs = {
+  id: Scalars['ID']['input'];
 };
 
 /** Details of a shipment from a single warehouse */
@@ -265,6 +326,17 @@ export type ShippingValidity = {
   shippingPercentage?: Maybe<Scalars['Float']['output']>;
 };
 
+/** Product reference in warehouse stock */
+export type StockProduct = {
+  __typename?: 'StockProduct';
+  /** Product ID */
+  id?: Maybe<Scalars['ID']['output']>;
+  /** Product name */
+  name?: Maybe<Scalars['String']['output']>;
+  /** Product SKU */
+  sku?: Maybe<Scalars['String']['output']>;
+};
+
 /** A warehouse/distribution center */
 export type Warehouse = {
   __typename?: 'Warehouse';
@@ -278,10 +350,23 @@ export type Warehouse = {
   longitude?: Maybe<Scalars['Decimal']['output']>;
   /** Warehouse name/location */
   name?: Maybe<Scalars['String']['output']>;
-  /** Current stock level */
-  stock?: Maybe<Scalars['Int']['output']>;
+  /** Stock levels per product at this warehouse */
+  stocks?: Maybe<Array<WarehouseStock>>;
   /** When the warehouse was last updated */
   updatedAt?: Maybe<Scalars['DateTime']['output']>;
+};
+
+/** Stock level of a product at a warehouse */
+export type WarehouseStock = {
+  __typename?: 'WarehouseStock';
+  /** Unique stock record identifier */
+  id?: Maybe<Scalars['ID']['output']>;
+  /** Product details */
+  product?: Maybe<StockProduct>;
+  /** Product ID */
+  productId?: Maybe<Scalars['ID']['output']>;
+  /** Stock quantity */
+  quantity?: Maybe<Scalars['Int']['output']>;
 };
 
 export type VerifyOrderMutationVariables = Exact<{
@@ -289,19 +374,26 @@ export type VerifyOrderMutationVariables = Exact<{
 }>;
 
 
-export type VerifyOrderMutation = { __typename?: 'Mutation', verifyOrder?: { __typename?: 'OrderQuote', isValid?: boolean | null, errorMessage?: string | null, quantity?: number | null, customerLatitude?: number | null, customerLongitude?: number | null, totalShippingCostCents?: number | null, grandTotalCents?: number | null, subtotalCents?: number | null, product?: { __typename?: 'QuoteProduct', id?: string | null, name?: string | null, unitPriceCents?: number | null, weightGrams?: number | null } | null, discount?: { __typename?: 'DiscountResult', originalAmountCents?: number | null, discountAmountCents?: number | null, discountedAmountCents?: number | null, discountPercentage?: number | null, tierName?: string | null } | null, shipments?: Array<{ __typename?: 'ShipmentDetail', warehouseId?: string | null, warehouseName?: string | null, quantity?: number | null, distanceKm?: number | null, shippingCostCents?: number | null }> | null, shippingValidity?: { __typename?: 'ShippingValidity', isValid?: boolean | null, shippingCostCents?: number | null, orderAmountCents?: number | null, shippingPercentage?: number | null, maxAllowedShippingCents?: number | null, overLimitCents?: number | null } | null } | null };
+export type VerifyOrderMutation = { __typename?: 'Mutation', verifyOrder?: { __typename?: 'OrderQuote', isValid?: boolean | null, errorMessage?: string | null, customerLatitude?: number | null, customerLongitude?: number | null, subtotalCents?: number | null, totalShippingCostCents?: number | null, grandTotalCents?: number | null, totalQuantity?: number | null, items?: Array<{ __typename?: 'OrderItemQuote', productId?: string | null, productName?: string | null, quantity?: number | null, unitPriceCents?: number | null, subtotalCents?: number | null, shippingCostCents?: number | null, canFulfill?: boolean | null, errorMessage?: string | null, shipments?: Array<{ __typename?: 'ShipmentDetail', warehouseId?: string | null, warehouseName?: string | null, quantity?: number | null, distanceKm?: number | null, shippingCostCents?: number | null }> | null }> | null, discount?: { __typename?: 'DiscountResult', originalAmountCents?: number | null, discountAmountCents?: number | null, discountedAmountCents?: number | null, discountPercentage?: number | null, tierName?: string | null } | null, shippingValidity?: { __typename?: 'ShippingValidity', isValid?: boolean | null, shippingCostCents?: number | null, orderAmountCents?: number | null, shippingPercentage?: number | null, maxAllowedShippingCents?: number | null, overLimitCents?: number | null } | null } | null };
 
 export type SubmitOrderMutationVariables = Exact<{
   input: OrderInput;
 }>;
 
 
-export type SubmitOrderMutation = { __typename?: 'Mutation', submitOrder?: { __typename?: 'Order', id?: string | null, orderNumber?: string | null, quantity?: number | null, customerLatitude?: string | null, customerLongitude?: string | null, subtotalCents?: number | null, discountCents?: number | null, shippingCents?: number | null, totalCents?: number | null, status?: OrderStatus | null, createdAt?: string | null, shipments?: Array<{ __typename?: 'OrderShipment', id?: string | null, warehouseId?: string | null, warehouseName?: string | null, quantity?: number | null, distanceKm?: string | null, shippingCents?: number | null }> | null } | null };
+export type SubmitOrderMutation = { __typename?: 'Mutation', submitOrder?: { __typename?: 'Order', id?: string | null, orderNumber?: string | null, customerLatitude?: string | null, customerLongitude?: string | null, subtotalCents?: number | null, discountCents?: number | null, shippingCents?: number | null, totalCents?: number | null, totalQuantity?: number | null, status?: OrderStatus | null, createdAt?: string | null, items?: Array<{ __typename?: 'OrderItem', id?: string | null, productId?: string | null, quantity?: number | null, unitPriceCents?: number | null, subtotalCents?: number | null, product?: { __typename?: 'OrderItemProduct', id?: string | null, name?: string | null, sku?: string | null } | null, shipments?: Array<{ __typename?: 'OrderShipment', id?: string | null, warehouseId?: string | null, warehouseName?: string | null, warehouseLatitude?: string | null, warehouseLongitude?: string | null, quantity?: number | null, distanceKm?: string | null, shippingCents?: number | null }> | null }> | null } | null };
 
 export type GetWarehousesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetWarehousesQuery = { __typename?: 'Query', totalStock?: number | null, warehouses?: Array<{ __typename?: 'Warehouse', id?: string | null, name?: string | null, latitude?: string | null, longitude?: string | null, stock?: number | null, createdAt?: string | null }> | null };
+export type GetWarehousesQuery = { __typename?: 'Query', totalStock?: number | null, warehouses?: Array<{ __typename?: 'Warehouse', id?: string | null, name?: string | null, latitude?: string | null, longitude?: string | null, createdAt?: string | null, stocks?: Array<{ __typename?: 'WarehouseStock', id?: string | null, productId?: string | null, quantity?: number | null, product?: { __typename?: 'StockProduct', id?: string | null, name?: string | null, sku?: string | null } | null }> | null }> | null };
+
+export type GetTotalStockByProductQueryVariables = Exact<{
+  productId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type GetTotalStockByProductQuery = { __typename?: 'Query', totalStock?: number | null };
 
 export type GetProductsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -313,14 +405,14 @@ export type GetOrdersQueryVariables = Exact<{
 }>;
 
 
-export type GetOrdersQuery = { __typename?: 'Query', orders?: Array<{ __typename?: 'Order', id?: string | null, orderNumber?: string | null, quantity?: number | null, customerLatitude?: string | null, customerLongitude?: string | null, subtotalCents?: number | null, discountCents?: number | null, shippingCents?: number | null, totalCents?: number | null, status?: OrderStatus | null, createdAt?: string | null, shipments?: Array<{ __typename?: 'OrderShipment', id?: string | null, warehouseId?: string | null, warehouseName?: string | null, quantity?: number | null, distanceKm?: string | null, shippingCents?: number | null }> | null }> | null };
+export type GetOrdersQuery = { __typename?: 'Query', orders?: Array<{ __typename?: 'Order', id?: string | null, orderNumber?: string | null, customerLatitude?: string | null, customerLongitude?: string | null, subtotalCents?: number | null, discountCents?: number | null, shippingCents?: number | null, totalCents?: number | null, totalQuantity?: number | null, status?: OrderStatus | null, createdAt?: string | null, items?: Array<{ __typename?: 'OrderItem', id?: string | null, productId?: string | null, quantity?: number | null, unitPriceCents?: number | null, subtotalCents?: number | null, product?: { __typename?: 'OrderItemProduct', id?: string | null, name?: string | null, sku?: string | null, priceInCents?: number | null } | null, shipments?: Array<{ __typename?: 'OrderShipment', id?: string | null, warehouseId?: string | null, warehouseName?: string | null, warehouseLatitude?: string | null, warehouseLongitude?: string | null, quantity?: number | null, distanceKm?: string | null, shippingCents?: number | null }> | null }> | null }> | null };
 
 export type GetOrderQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type GetOrderQuery = { __typename?: 'Query', order?: { __typename?: 'Order', id?: string | null, orderNumber?: string | null, quantity?: number | null, customerLatitude?: string | null, customerLongitude?: string | null, subtotalCents?: number | null, discountCents?: number | null, shippingCents?: number | null, totalCents?: number | null, status?: OrderStatus | null, createdAt?: string | null, shipments?: Array<{ __typename?: 'OrderShipment', id?: string | null, warehouseId?: string | null, warehouseName?: string | null, quantity?: number | null, distanceKm?: string | null, shippingCents?: number | null }> | null } | null };
+export type GetOrderQuery = { __typename?: 'Query', order?: { __typename?: 'Order', id?: string | null, orderNumber?: string | null, customerLatitude?: string | null, customerLongitude?: string | null, subtotalCents?: number | null, discountCents?: number | null, shippingCents?: number | null, totalCents?: number | null, totalQuantity?: number | null, status?: OrderStatus | null, createdAt?: string | null, items?: Array<{ __typename?: 'OrderItem', id?: string | null, productId?: string | null, quantity?: number | null, unitPriceCents?: number | null, subtotalCents?: number | null, product?: { __typename?: 'OrderItemProduct', id?: string | null, name?: string | null, sku?: string | null, priceInCents?: number | null } | null, shipments?: Array<{ __typename?: 'OrderShipment', id?: string | null, warehouseId?: string | null, warehouseName?: string | null, warehouseLatitude?: string | null, warehouseLongitude?: string | null, quantity?: number | null, distanceKm?: string | null, shippingCents?: number | null }> | null }> | null } | null };
 
 
 export const VerifyOrderDocument = gql`
@@ -328,15 +420,26 @@ export const VerifyOrderDocument = gql`
   verifyOrder(input: $input) {
     isValid
     errorMessage
-    quantity
     customerLatitude
     customerLongitude
-    product {
-      id
-      name
+    items {
+      productId
+      productName
+      quantity
       unitPriceCents
-      weightGrams
+      subtotalCents
+      shippingCostCents
+      canFulfill
+      errorMessage
+      shipments {
+        warehouseId
+        warehouseName
+        quantity
+        distanceKm
+        shippingCostCents
+      }
     }
+    subtotalCents
     discount {
       originalAmountCents
       discountAmountCents
@@ -344,13 +447,7 @@ export const VerifyOrderDocument = gql`
       discountPercentage
       tierName
     }
-    shipments {
-      warehouseId
-      warehouseName
-      quantity
-      distanceKm
-      shippingCostCents
-    }
+    totalShippingCostCents
     shippingValidity {
       isValid
       shippingCostCents
@@ -359,9 +456,8 @@ export const VerifyOrderDocument = gql`
       maxAllowedShippingCents
       overLimitCents
     }
-    totalShippingCostCents
     grandTotalCents
-    subtotalCents
+    totalQuantity
   }
 }
     `;
@@ -396,22 +492,36 @@ export const SubmitOrderDocument = gql`
   submitOrder(input: $input) {
     id
     orderNumber
-    quantity
     customerLatitude
     customerLongitude
     subtotalCents
     discountCents
     shippingCents
     totalCents
+    totalQuantity
     status
     createdAt
-    shipments {
+    items {
       id
-      warehouseId
-      warehouseName
+      productId
       quantity
-      distanceKm
-      shippingCents
+      unitPriceCents
+      subtotalCents
+      product {
+        id
+        name
+        sku
+      }
+      shipments {
+        id
+        warehouseId
+        warehouseName
+        warehouseLatitude
+        warehouseLongitude
+        quantity
+        distanceKm
+        shippingCents
+      }
     }
   }
 }
@@ -449,7 +559,16 @@ export const GetWarehousesDocument = gql`
     name
     latitude
     longitude
-    stock
+    stocks {
+      id
+      productId
+      quantity
+      product {
+        id
+        name
+        sku
+      }
+    }
     createdAt
   }
   totalStock
@@ -490,6 +609,47 @@ export type GetWarehousesQueryHookResult = ReturnType<typeof useGetWarehousesQue
 export type GetWarehousesLazyQueryHookResult = ReturnType<typeof useGetWarehousesLazyQuery>;
 export type GetWarehousesSuspenseQueryHookResult = ReturnType<typeof useGetWarehousesSuspenseQuery>;
 export type GetWarehousesQueryResult = Apollo.QueryResult<GetWarehousesQuery, GetWarehousesQueryVariables>;
+export const GetTotalStockByProductDocument = gql`
+    query GetTotalStockByProduct($productId: ID) {
+  totalStock(productId: $productId)
+}
+    `;
+
+/**
+ * __useGetTotalStockByProductQuery__
+ *
+ * To run a query within a React component, call `useGetTotalStockByProductQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetTotalStockByProductQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetTotalStockByProductQuery({
+ *   variables: {
+ *      productId: // value for 'productId'
+ *   },
+ * });
+ */
+export function useGetTotalStockByProductQuery(baseOptions?: ApolloReactHooks.QueryHookOptions<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return ApolloReactHooks.useQuery<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>(GetTotalStockByProductDocument, options);
+      }
+export function useGetTotalStockByProductLazyQuery(baseOptions?: ApolloReactHooks.LazyQueryHookOptions<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useLazyQuery<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>(GetTotalStockByProductDocument, options);
+        }
+// @ts-ignore
+export function useGetTotalStockByProductSuspenseQuery(baseOptions?: ApolloReactHooks.SuspenseQueryHookOptions<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>;
+export function useGetTotalStockByProductSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>): ApolloReactHooks.UseSuspenseQueryResult<GetTotalStockByProductQuery | undefined, GetTotalStockByProductQueryVariables>;
+export function useGetTotalStockByProductSuspenseQuery(baseOptions?: ApolloReactHooks.SkipToken | ApolloReactHooks.SuspenseQueryHookOptions<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>) {
+          const options = baseOptions === ApolloReactHooks.skipToken ? baseOptions : {...defaultOptions, ...baseOptions}
+          return ApolloReactHooks.useSuspenseQuery<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>(GetTotalStockByProductDocument, options);
+        }
+export type GetTotalStockByProductQueryHookResult = ReturnType<typeof useGetTotalStockByProductQuery>;
+export type GetTotalStockByProductLazyQueryHookResult = ReturnType<typeof useGetTotalStockByProductLazyQuery>;
+export type GetTotalStockByProductSuspenseQueryHookResult = ReturnType<typeof useGetTotalStockByProductSuspenseQuery>;
+export type GetTotalStockByProductQueryResult = Apollo.QueryResult<GetTotalStockByProductQuery, GetTotalStockByProductQueryVariables>;
 export const GetProductsDocument = gql`
     query GetProducts {
   products {
@@ -542,22 +702,37 @@ export const GetOrdersDocument = gql`
   orders(limit: $limit) {
     id
     orderNumber
-    quantity
     customerLatitude
     customerLongitude
     subtotalCents
     discountCents
     shippingCents
     totalCents
+    totalQuantity
     status
     createdAt
-    shipments {
+    items {
       id
-      warehouseId
-      warehouseName
+      productId
       quantity
-      distanceKm
-      shippingCents
+      unitPriceCents
+      subtotalCents
+      product {
+        id
+        name
+        sku
+        priceInCents
+      }
+      shipments {
+        id
+        warehouseId
+        warehouseName
+        warehouseLatitude
+        warehouseLongitude
+        quantity
+        distanceKm
+        shippingCents
+      }
     }
   }
 }
@@ -603,22 +778,37 @@ export const GetOrderDocument = gql`
   order(id: $id) {
     id
     orderNumber
-    quantity
     customerLatitude
     customerLongitude
     subtotalCents
     discountCents
     shippingCents
     totalCents
+    totalQuantity
     status
     createdAt
-    shipments {
+    items {
       id
-      warehouseId
-      warehouseName
+      productId
       quantity
-      distanceKm
-      shippingCents
+      unitPriceCents
+      subtotalCents
+      product {
+        id
+        name
+        sku
+        priceInCents
+      }
+      shipments {
+        id
+        warehouseId
+        warehouseName
+        warehouseLatitude
+        warehouseLongitude
+        quantity
+        distanceKm
+        shippingCents
+      }
     }
   }
 }

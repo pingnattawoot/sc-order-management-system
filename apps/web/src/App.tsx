@@ -27,7 +27,7 @@ function App() {
               </div>
             </div>
             <div className="text-sm text-muted-foreground">
-              SCOS Station P1 Pro
+              Multi-Product Ordering
             </div>
           </div>
         </div>

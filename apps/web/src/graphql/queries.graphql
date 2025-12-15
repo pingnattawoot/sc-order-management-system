@@ -6,10 +6,23 @@ query GetWarehouses {
     name
     latitude
     longitude
-    stock
+    stocks {
+      id
+      productId
+      quantity
+      product {
+        id
+        name
+        sku
+      }
+    }
     createdAt
   }
   totalStock
+}
+
+query GetTotalStockByProduct($productId: ID) {
+  totalStock(productId: $productId)
 }
 
 # Product Queries
@@ -31,22 +44,37 @@ query GetOrders($limit: Int) {
   orders(limit: $limit) {
     id
     orderNumber
-    quantity
     customerLatitude
     customerLongitude
     subtotalCents
     discountCents
     shippingCents
     totalCents
+    totalQuantity
     status
     createdAt
-    shipments {
+    items {
       id
-      warehouseId
-      warehouseName
+      productId
       quantity
-      distanceKm
-      shippingCents
+      unitPriceCents
+      subtotalCents
+      product {
+        id
+        name
+        sku
+        priceInCents
+      }
+      shipments {
+        id
+        warehouseId
+        warehouseName
+        warehouseLatitude
+        warehouseLongitude
+        quantity
+        distanceKm
+        shippingCents
+      }
     }
   }
 }
@@ -55,22 +83,37 @@ query GetOrder($id: ID!) {
   order(id: $id) {
     id
     orderNumber
-    quantity
     customerLatitude
     customerLongitude
     subtotalCents
     discountCents
     shippingCents
     totalCents
+    totalQuantity
     status
     createdAt
-    shipments {
+    items {
       id
-      warehouseId
-      warehouseName
+      productId
       quantity
-      distanceKm
-      shippingCents
+      unitPriceCents
+      subtotalCents
+      product {
+        id
+        name
+        sku
+        priceInCents
+      }
+      shipments {
+        id
+        warehouseId
+        warehouseName
+        warehouseLatitude
+        warehouseLongitude
+        quantity
+        distanceKm
+        shippingCents
+      }
     }
   }
 }

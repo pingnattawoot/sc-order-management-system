@@ -1,20 +1,20 @@
 /**
  * New Order Tab
  *
- * Interactive map for placing orders:
+ * Interactive map for placing multi-item orders:
  * 1. Click map to select delivery location
- * 2. Enter quantity in sheet
+ * 2. Add items (product + quantity) in sheet
  * 3. Verify order to see pricing and warehouse allocation
  * 4. Submit if valid
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { WarehouseMap } from '@/components/map';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -25,14 +25,30 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   useGetWarehousesQuery,
+  useGetProductsQuery,
   useVerifyOrderMutation,
   useSubmitOrderMutation,
   type VerifyOrderMutation,
   type Warehouse,
+  type Product,
+  type ShipmentDetail,
 } from '@/graphql';
 
 type OrderQuote = NonNullable<VerifyOrderMutation['verifyOrder']>;
+
+// Order item being built
+interface OrderItemDraft {
+  productId: string;
+  quantity: number;
+}
 
 // Helper to format cents as currency with comma separators
 const formatCurrency = (cents: number | null | undefined) => {
@@ -49,37 +65,76 @@ const formatNumber = (num: number | null | undefined) => {
   return new Intl.NumberFormat('en-US').format(num);
 };
 
+// Extend Warehouse type to include computed total stock
+type WarehouseWithTotalStock = Warehouse & { totalStock?: number };
+
 export function NewOrderTab() {
   // State
   const [selectedLocation, setSelectedLocation] = useState<[number, number] | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [orderItems, setOrderItems] = useState<OrderItemDraft[]>([]);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [quote, setQuote] = useState<OrderQuote | null>(null);
 
   // Queries & Mutations
   const { data: warehouseData, loading: warehousesLoading, refetch: refetchWarehouses } = useGetWarehousesQuery();
+  const { data: productData, loading: productsLoading } = useGetProductsQuery();
   const [verifyOrder, { loading: verifying }] = useVerifyOrderMutation();
   const [submitOrder, { loading: submitting }] = useSubmitOrderMutation();
 
-  const warehouses = (warehouseData?.warehouses ?? []) as Warehouse[];
+  const products = useMemo(() => (productData?.products ?? []) as Product[], [productData?.products]);
+
+  // Transform warehouses to include computed total stock for map display
+  const warehouses: WarehouseWithTotalStock[] = useMemo(() => {
+    return (warehouseData?.warehouses ?? []).map((w) => ({
+      ...w,
+      totalStock: (w.stocks ?? []).reduce((sum, s) => sum + (s.quantity ?? 0), 0),
+    }));
+  }, [warehouseData?.warehouses]);
+
   const totalStock = warehouseData?.totalStock ?? 0;
+
+  // Add a new item to the order
+  const handleAddItem = () => {
+    if (products.length > 0 && products[0].id) {
+      setOrderItems([...orderItems, { productId: products[0].id, quantity: 1 }]);
+    }
+  };
+
+  // Update an item
+  const handleUpdateItem = (index: number, updates: Partial<OrderItemDraft>) => {
+    setOrderItems(orderItems.map((item, i) => 
+      i === index ? { ...item, ...updates } : item
+    ));
+  };
+
+  // Remove an item
+  const handleRemoveItem = (index: number) => {
+    setOrderItems(orderItems.filter((_, i) => i !== index));
+  };
 
   // Handle map click
   const handleLocationSelect = useCallback((lat: number, lng: number) => {
     setSelectedLocation([lat, lng]);
     setQuote(null);
     setIsSheetOpen(true);
-  }, []);
+    // Add default item if none exist
+    if (orderItems.length === 0 && products.length > 0 && products[0].id) {
+      setOrderItems([{ productId: products[0].id, quantity: 1 }]);
+    }
+  }, [orderItems.length, products]);
 
   // Handle verify
   const handleVerify = async () => {
-    if (!selectedLocation) return;
+    if (!selectedLocation || orderItems.length === 0) return;
 
     try {
       const result = await verifyOrder({
         variables: {
           input: {
-            quantity,
+            items: orderItems.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+            })),
             latitude: selectedLocation[0],
             longitude: selectedLocation[1],
           },
@@ -100,13 +155,16 @@ export function NewOrderTab() {
 
   // Handle submit
   const handleSubmit = async () => {
-    if (!selectedLocation || !quote?.isValid) return;
+    if (!selectedLocation || !quote?.isValid || orderItems.length === 0) return;
 
     try {
       const result = await submitOrder({
         variables: {
           input: {
-            quantity,
+            items: orderItems.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+            })),
             latitude: selectedLocation[0],
             longitude: selectedLocation[1],
           },
@@ -118,7 +176,7 @@ export function NewOrderTab() {
         setIsSheetOpen(false);
         setSelectedLocation(null);
         setQuote(null);
-        setQuantity(1);
+        setOrderItems([]);
         refetchWarehouses();
       }
     } catch (error) {
@@ -133,8 +191,18 @@ export function NewOrderTab() {
     setQuote(null);
   };
 
-  // Get shipment details for map highlighting
-  const activeShipments = quote?.shipments ?? [];
+  // Get all shipment details for map highlighting (flatten from all items)
+  const quoteItems = quote?.items;
+  const activeShipments: ShipmentDetail[] = useMemo(() => {
+    if (!quoteItems) return [];
+    return quoteItems.flatMap((item) => item?.shipments ?? []);
+  }, [quoteItems]);
+
+  // Get product by ID helper
+  const getProduct = (productId: string) => products.find((p) => p.id === productId);
+
+  // Calculate total quantity across all items
+  const totalOrderQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="space-y-4">
@@ -152,9 +220,9 @@ export function NewOrderTab() {
       </div>
 
       {/* Map */}
-      {warehousesLoading ? (
+      {warehousesLoading || productsLoading ? (
         <div className="h-[500px] flex items-center justify-center bg-muted rounded-lg">
-          <p className="text-muted-foreground">Loading warehouses...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       ) : (
         <WarehouseMap
@@ -170,15 +238,15 @@ export function NewOrderTab() {
 
       {/* Order Sheet - transparent overlay to see map */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent transparentOverlay className="overflow-y-auto">
+        <SheetContent transparentOverlay className="overflow-y-auto w-[400px] sm:w-[540px]">
           <SheetHeader className="p-0">
             <SheetTitle>Order Details</SheetTitle>
             <SheetDescription>
-              Configure and verify your order before submitting
+              Add items and verify your order before submitting
             </SheetDescription>
           </SheetHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 mt-4">
             {/* Location Info */}
             <Card>
               <CardHeader className="pb-2">
@@ -198,56 +266,120 @@ export function NewOrderTab() {
               </CardContent>
             </Card>
 
-            {/* Quantity Input */}
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 10))}
-                  disabled={quantity <= 1}
-                >
-                  -10
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                >
-                  -
-                </Button>
-                <Input
-                  id="quantity"
-                  type="number"
-                  min={1}
-                  max={totalStock}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-24 text-center"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(quantity + 1)}
-                >
-                  +
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(quantity + 10)}
-                >
-                  +10
-                </Button>
-              </div>
-            </div>
+            {/* Order Items */}
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm">Order Items</CardTitle>
+                  <Button variant="outline" size="sm" onClick={handleAddItem}>
+                    + Add Item
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {orderItems.length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-4">
+                    No items added yet. Click "Add Item" to start.
+                  </p>
+                ) : (
+                  orderItems.map((item, index) => {
+                    const product = getProduct(item.productId);
+                    return (
+                      <div key={index} className="p-3 border rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs text-muted-foreground">Product</Label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemoveItem(index)}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                        <Select
+                          value={item.productId}
+                          onValueChange={(value: string) => handleUpdateItem(index, { productId: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select product" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products.map((p) => (
+                              <SelectItem key={p.id} value={p.id!}>
+                                {p.name} ({formatCurrency(p.priceInCents)})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Quantity</Label>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleUpdateItem(index, { quantity: Math.max(1, item.quantity - 10) })}
+                              disabled={item.quantity <= 1}
+                            >
+                              -10
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleUpdateItem(index, { quantity: Math.max(1, item.quantity - 1) })}
+                              disabled={item.quantity <= 1}
+                            >
+                              -
+                            </Button>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={item.quantity}
+                              onChange={(e) => handleUpdateItem(index, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                              className="w-20 text-center h-8"
+                            />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleUpdateItem(index, { quantity: item.quantity + 1 })}
+                            >
+                              +
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleUpdateItem(index, { quantity: item.quantity + 10 })}
+                            >
+                              +10
+                            </Button>
+                          </div>
+                        </div>
+                        {product && (
+                          <div className="text-xs text-muted-foreground">
+                            Subtotal: {formatCurrency((product.priceInCents ?? 0) * item.quantity)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+                {orderItems.length > 0 && (
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="text-sm font-medium">Total Items:</span>
+                    <span className="text-sm">{formatNumber(totalOrderQuantity)} units</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Verify Button */}
             <Button
               onClick={handleVerify}
-              disabled={verifying}
+              disabled={verifying || orderItems.length === 0}
               className="w-full"
               variant="secondary"
             >
@@ -271,14 +403,53 @@ export function NewOrderTab() {
                   )}
                 </div>
 
+                {/* Item-level Results */}
+                {quote.items && quote.items.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Item Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {quote.items.map((item, i) => (
+                        <div key={i} className="p-2 bg-muted rounded text-sm">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{item?.productName}</span>
+                            {item?.canFulfill ? (
+                              <Badge variant="outline" className="text-green-600">✓</Badge>
+                            ) : (
+                              <Badge variant="destructive">✗</Badge>
+                            )}
+                          </div>
+                          <div className="text-muted-foreground text-xs mt-1">
+                            {formatNumber(item?.quantity)} × {formatCurrency(item?.unitPriceCents)} = {formatCurrency(item?.subtotalCents)}
+                          </div>
+                          {item?.errorMessage && (
+                            <div className="text-destructive text-xs mt-1">{item.errorMessage}</div>
+                          )}
+                          {item?.shipments && item.shipments.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                              {item.shipments.map((s, si) => (
+                                <div key={si} className="text-xs flex justify-between text-muted-foreground">
+                                  <span>{s?.warehouseName} ({formatNumber(Math.round(s?.distanceKm ?? 0))}km)</span>
+                                  <span>{formatNumber(s?.quantity)} units</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Pricing Breakdown */}
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Pricing Breakdown</CardTitle>
+                    <CardTitle className="text-sm">Pricing Summary</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Subtotal ({formatNumber(quote.quantity)} × {formatCurrency(quote.product?.unitPriceCents)})</span>
+                      <span>Subtotal ({formatNumber(quote.totalQuantity)} items)</span>
                       <span>{formatCurrency(quote.subtotalCents)}</span>
                     </div>
                     {(quote.discount?.discountPercentage ?? 0) > 0 && (
@@ -306,38 +477,6 @@ export function NewOrderTab() {
                   </CardContent>
                 </Card>
 
-                {/* Shipment Allocation */}
-                {quote.shipments && quote.shipments.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">Warehouse Allocation</CardTitle>
-                      <CardDescription>
-                        Units will be shipped from {quote.shipments.length} warehouse(s)
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {quote.shipments.map((shipment, i) => (
-                          <div key={i} className="flex justify-between items-center text-sm p-2 bg-muted rounded">
-                            <div>
-                              <span className="font-medium">{shipment?.warehouseName}</span>
-                              <span className="text-muted-foreground ml-2">
-                                ({formatNumber(Math.round(shipment?.distanceKm ?? 0))} km)
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <span className="font-medium">{formatNumber(shipment?.quantity)} units</span>
-                              <span className="text-muted-foreground ml-2">
-                                {formatCurrency(shipment?.shippingCostCents)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
                 {/* Submit Button */}
                 {quote.isValid && (
                   <Button
@@ -362,4 +501,3 @@ export function NewOrderTab() {
     </div>
   );
 }
-

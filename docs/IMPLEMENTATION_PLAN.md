@@ -477,26 +477,26 @@ model OrderItem {
 - [ ] Update mutations: `verifyOrder`, `submitOrder`
 - [ ] **COMMIT:** "feat(api): update graphql schema for multi-item orders"
 
-### 7.9.4 Update Frontend
+### 7.9.4 Update Frontend ✅
 
-- [ ] Fetch products list on app load
-- [ ] Add "Add Item" functionality in NewOrderTab
-- [ ] Support multiple products in cart before verification
-- [ ] Update order form to show item list with quantities
-- [ ] Update OrdersTab to display order items
-- [ ] Update StockTab to show stock per product per warehouse
-- [ ] Regenerate GraphQL types
-- [ ] **COMMIT:** "feat(web): update frontend for multi-item orders"
+- [x] Fetch products list on app load
+- [x] Add "Add Item" functionality in NewOrderTab
+- [x] Support multiple products in cart before verification
+- [x] Update order form to show item list with quantities
+- [x] Update OrdersTab to display order items
+- [x] Update StockTab to show stock per product per warehouse
+- [x] Regenerate GraphQL types
+- [x] **COMMIT:** "feat(web): update frontend for multi-item orders"
 
-### 7.9.5 Testing & Validation
+### 7.9.5 Testing & Validation ✅
 
-- [ ] Update existing tests for new schema
-- [ ] Add tests for multi-product warehouse stock
-- [ ] Add tests for multi-item order verification
-- [ ] Add tests for multi-item order submission
-- [ ] Test greedy algorithm with multiple products
-- [ ] Test stock deduction across products
-- [ ] **COMMIT:** "test: add multi-product order tests"
+- [x] Update existing tests for new schema
+- [x] Add tests for multi-product warehouse stock
+- [x] Add tests for multi-item order verification
+- [x] Add tests for multi-item order submission
+- [x] Test greedy algorithm with multiple products
+- [x] Test stock deduction across products
+- [x] **COMMIT:** "test: add multi-product order tests"
 
 ### Algorithm Behavior (Greedy per Product)
 
