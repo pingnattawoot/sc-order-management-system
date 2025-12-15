@@ -279,41 +279,38 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
-## Phase 7.9: Multi-Product & Multi-Item Architecture 🔴
+## Phase 7.9: Multi-Product & Multi-Item Architecture 🟡
 
-> **Critical Refactor:** Current architecture has fundamental limitations:
-> - Warehouse.stock is single Int (can't track per product)
-> - Order has single quantity (can't have multiple items)
-> - OrderShipment links to Order (should link to OrderItem)
+> **Critical Refactor:** Backend complete! Frontend updates pending.
 
-### 7.9.1 Database Schema Migration
+### 7.9.1 Database Schema Migration ✅
 
-- [ ] Create `WarehouseStock` model (warehouseId, productId, quantity)
-- [ ] Create `OrderItem` model (orderId, productId, quantity, prices)
-- [ ] Update `Warehouse` - remove stock, add stocks[]
-- [ ] Update `Order` - remove quantity, add items[]
-- [ ] Update `OrderShipment` - orderItemId instead of orderId
-- [ ] Create migration script & update seed
-- [ ] **COMMIT:** `feat(api): migrate schema to multi-product architecture`
+- [x] Create `WarehouseStock` model (warehouseId, productId, quantity)
+- [x] Create `OrderItem` model (orderId, productId, quantity, prices)
+- [x] Update `Warehouse` - remove stock, add stocks[]
+- [x] Update `Order` - remove quantity, add items[]
+- [x] Update `OrderShipment` - orderItemId instead of orderId
+- [x] Create migration script & update seed
+- [x] **COMMIT:** `feat(api): migrate schema to multi-product architecture`
 
-### 7.9.2 Domain Logic Updates
+### 7.9.2 Domain Logic Updates ✅
 
-- [ ] Update `WarehouseOptimizer.optimizeForProduct(productId, ...)`
-- [ ] Create `OrderItemInput` type
-- [ ] Update `OrderInput` to use items[] array
-- [ ] Update `verifyOrder()` - process each item, run optimizer per product
-- [ ] Update `submitOrder()` - create OrderItems, link shipments
-- [ ] Update stock deduction to use WarehouseStock
-- [ ] **COMMIT:** `feat(api): update domain logic for multi-item orders`
+- [x] Update `WarehouseOptimizer.optimizeForProduct(productId, ...)`
+- [x] Create `OrderItemInput` type
+- [x] Update `OrderInput` to use items[] array
+- [x] Update `verifyOrder()` - process each item, run optimizer per product
+- [x] Update `submitOrder()` - create OrderItems, link shipments
+- [x] Update stock deduction to use WarehouseStock
+- [x] _(Combined into single commit with 7.9.1)_
 
-### 7.9.3 GraphQL API Updates
+### 7.9.3 GraphQL API Updates ✅
 
-- [ ] Add `WarehouseStock`, `OrderItem` types
-- [ ] Add `OrderItemInput` input type
-- [ ] Update `OrderInput` with items[]
-- [ ] Update `OrderQuote` with item-level breakdowns
-- [ ] Update warehouse/order queries
-- [ ] **COMMIT:** `feat(api): update graphql schema for multi-item orders`
+- [x] Add `WarehouseStock`, `OrderItem` types
+- [x] Add `OrderItemInput` input type
+- [x] Update `OrderInput` with items[]
+- [x] Update `OrderQuote` with item-level breakdowns
+- [x] Update warehouse/order queries
+- [x] _(Combined into single commit with 7.9.1)_
 
 ### 7.9.4 Frontend Updates
 
@@ -327,7 +324,7 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ### 7.9.5 Testing
 
-- [ ] Update existing tests for new schema
+- [x] Update existing tests for new schema
 - [ ] Multi-product warehouse stock tests
 - [ ] Multi-item order verification tests
 - [ ] Greedy algorithm per product tests
@@ -416,8 +413,8 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 | 5. Domain Logic      | ✅ Complete    | 1/1      |
 | 6. GraphQL API       | ✅ Complete    | 1/1      |
 | 7. Frontend          | ✅ Complete    | 4/4      |
-| 7.9 Multi-Product    | 🔴 Critical    | 0/5      |
+| 7.9 Multi-Product    | 🟡 In Progress | 1/2      |
 | 8. DevOps            | ⬜ Not Started | 0/5      |
-| **Total**            | **67%**        | **12/22**|
+| **Total**            | **72%**        | **13/20**|
 
-Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete | 🔴 Critical Refactor
+Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete
