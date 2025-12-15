@@ -34,10 +34,19 @@ import {
   type ShipmentDetail,
 } from '@/graphql';
 
-// Helper to format cents as currency
+// Helper to format cents as currency with comma separators
 const formatCurrency = (cents: number | null | undefined) => {
   if (cents == null) return '$0.00';
-  return `$${(cents / 100).toFixed(2)}`;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(cents / 100);
+};
+
+// Helper to format numbers with comma separators
+const formatNumber = (num: number | null | undefined) => {
+  if (num == null) return '0';
+  return new Intl.NumberFormat('en-US').format(num);
 };
 
 // Helper to format date
@@ -133,7 +142,7 @@ export function OrdersTab() {
                     <TableCell className="text-muted-foreground">
                       {formatDate(order.createdAt)}
                     </TableCell>
-                    <TableCell className="text-right">{order.quantity}</TableCell>
+                    <TableCell className="text-right">{formatNumber(order.quantity)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(order.subtotalCents)}</TableCell>
                     <TableCell className="text-right text-green-600">
                       {(order.discountCents ?? 0) > 0 ? `-${formatCurrency(order.discountCents)}` : '-'}
@@ -176,13 +185,14 @@ export function OrdersTab() {
 
           {selectedOrder && (
             <div className="mt-6 space-y-6">
-              {/* Map */}
+              {/* Map - fit to customer and active warehouses */}
               <WarehouseMap
                 warehouses={warehouses}
                 customerLocation={customerLocation}
                 activeShipments={activeShipments}
                 height="300px"
                 interactive={false}
+                fitToShipments={true}
               />
 
               {/* Order Summary */}
@@ -193,7 +203,7 @@ export function OrdersTab() {
                 <CardContent className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Quantity</span>
-                    <span>{selectedOrder.quantity} units</span>
+                    <span>{formatNumber(selectedOrder.quantity)} units</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Subtotal</span>
@@ -232,11 +242,11 @@ export function OrdersTab() {
                         <div>
                           <span className="font-medium">{shipment?.warehouseName}</span>
                           <span className="text-muted-foreground ml-2">
-                            ({parseFloat(shipment?.distanceKm ?? '0').toFixed(0)} km)
+                            ({formatNumber(Math.round(parseFloat(shipment?.distanceKm ?? '0')))} km)
                           </span>
                         </div>
                         <div className="text-right">
-                          <span className="font-medium">{shipment?.quantity} units</span>
+                          <span className="font-medium">{formatNumber(shipment?.quantity)} units</span>
                           <span className="text-muted-foreground ml-2">
                             {formatCurrency(shipment?.shippingCents)}
                           </span>

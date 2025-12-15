@@ -121,3 +121,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Crosshair cursor for interactive maps */
+.cursor-crosshair .leaflet-container {
+  cursor: crosshair !important;
+}
+.cursor-crosshair .leaflet-interactive {
+  cursor: pointer !important;
+}
+.cursor-crosshair .leaflet-grab {
+  cursor: crosshair !important;
+}
+.cursor-crosshair .leaflet-dragging .leaflet-grab {
+  cursor: grabbing !important;
+}

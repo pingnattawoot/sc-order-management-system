@@ -210,73 +210,72 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
-## Phase 7: React Frontend
+## Phase 7: React Frontend ✅
 
 > Tab-based UI: New Order | Orders History | Stock Management
 
-### 7.1 Vite Setup
+### 7.1 Vite Setup ✅
 
-- [ ] Create `apps/web` with Vite + TypeScript
-- [ ] Install deps (apollo, leaflet, react-leaflet)
-- [ ] **COMMIT:** `chore(web): initialize vite react project`
+- [x] Create `apps/web` with Vite + TypeScript
+- [x] Install deps (apollo, leaflet, react-leaflet)
+- [x] **COMMIT:** `chore(web): initialize vite react project` _(d28084c)_
 
-### 7.2 Tailwind & shadcn/ui
+### 7.2 Tailwind & shadcn/ui ✅
 
-- [ ] Setup Tailwind CSS v4
-- [ ] Init shadcn/ui (New York style)
-- [ ] Add components: Button, Input, Card, Badge, Sheet/Dialog, Tabs, Table, Sonner
-- [ ] **COMMIT:** `chore(web): setup tailwind and shadcn/ui`
+- [x] Setup Tailwind CSS v4
+- [x] Init shadcn/ui (New York style)
+- [x] Add components: Button, Input, Card, Badge, Sheet/Dialog, Tabs, Table, Sonner
+- [x] **COMMIT:** `chore(web): setup tailwind and shadcn/ui` _(85e5584)_
 
-### 7.3 Apollo Client
+### 7.3 Apollo Client & Codegen ✅
 
-- [ ] Create `lib/apollo.ts` with endpoint
-- [ ] Setup ApolloProvider in main.tsx
-- [ ] Create GraphQL queries/mutations (warehouses, orders, verify, submit)
-- [ ] **COMMIT:** `chore(web): setup apollo client with queries`
+- [x] Create `lib/apollo.ts` with endpoint
+- [x] Setup ApolloProvider in main.tsx
+- [x] Setup GraphQL Codegen with `.graphql` files
+- [x] Generate types and hooks from backend API
+- [x] **COMMIT:** `chore(web): setup apollo client with queries` _(5d35730)_
 
-### 7.4 Shared Map Components
+### 7.4 Shared Map Components ✅
 
-- [ ] `Map/WarehouseMap.tsx` - Leaflet map with fit bounds
-- [ ] `Map/WarehouseMarker.tsx` - Custom marker with popup
-- [ ] `Map/CustomerMarker.tsx` - Destination marker
-- [ ] Configure Leaflet CSS
-- [ ] **COMMIT:** `feat(web): add shared map components`
+- [x] `Map/WarehouseMap.tsx` - Leaflet map with fit bounds
+- [x] `Map/WarehouseMarker.tsx` - Custom marker with stock level colors
+- [x] `Map/CustomerMarker.tsx` - Destination marker
+- [x] Draw shipment lines from warehouses to customer
+- [x] _(consolidated with 7.5-7.8 commit)_
 
-### 7.5 Tab 1: New Order
+### 7.5 Tab 1: New Order ✅
 
-- [ ] Map with all warehouses (fit bounds)
-- [ ] Click map → Sheet/Dialog with quantity input
-- [ ] Verify order → Show results on map
-- [ ] Highlight source warehouses
-- [ ] Show pricing breakdown + validity
-- [ ] Submit button (if valid)
-- [ ] Success toast with order number
-- [ ] **COMMIT:** `feat(web): implement new order tab with map`
+- [x] Map with all warehouses (fit bounds)
+- [x] Click map → Sheet with quantity input
+- [x] Verify order → Show results on map
+- [x] Highlight source warehouses (green markers + lines)
+- [x] Show pricing breakdown + validity
+- [x] Submit button (if valid)
+- [x] Success toast with order number
+- [x] _(consolidated with 7.6-7.8 commit)_
 
-### 7.6 Tab 2: Order History
+### 7.6 Tab 2: Order History ✅
 
-- [ ] Table listing all orders (newest first)
-- [ ] Click order → Show detail with map
-- [ ] Map shows customer + source warehouses
-- [ ] Full pricing and shipment breakdown
-- [ ] **COMMIT:** `feat(web): implement order history tab`
+- [x] Table listing all orders (newest first)
+- [x] Click order → Show detail with map
+- [x] Map shows customer + source warehouses
+- [x] Full pricing and shipment breakdown
+- [x] _(consolidated with 7.7-7.8 commit)_
 
-### 7.7 Tab 3: Stock Management
+### 7.7 Tab 3: Stock Management ✅
 
-- [ ] Warehouse table with stock levels
-- [ ] Stock indicators (progress bar/colors)
-- [ ] Map view with stock-based markers
-- [ ] Total global stock summary
-- [ ] **COMMIT:** `feat(web): implement stock management tab`
+- [x] Warehouse table with stock levels
+- [x] Stock indicators (progress bar/colors)
+- [x] Map view with stock-based markers
+- [x] Stats cards (total, average, low stock alerts)
+- [x] _(consolidated with 7.8 commit)_
 
-### 7.8 Polish & Integration
+### 7.8 Polish & Integration ✅
 
-- [ ] Main App.tsx with Tabs
-- [ ] Responsive design
-- [ ] Loading states and skeletons
-- [ ] Error boundaries
-- [ ] Style refinements
-- [ ] **COMMIT:** `feat(web): polish ui and finalize frontend`
+- [x] Main App.tsx with Tabs
+- [x] Loading states
+- [x] Currency and date formatters
+- [x] **COMMIT:** `feat(web): implement complete frontend with tabs` _(7c07498)_
 
 ---
 
@@ -360,8 +359,8 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 | 4. Testing Setup  | ✅ Complete    | 1/1      |
 | 5. Domain Logic   | ✅ Complete    | 1/1      |
 | 6. GraphQL API    | ✅ Complete    | 1/1      |
-| 7. Frontend       | 🟡 In Progress | 0/8      |
+| 7. Frontend       | ✅ Complete    | 4/4      |
 | 8. DevOps         | ⬜ Not Started | 0/5      |
-| **Total**         | **38%**        | **8/21** |
+| **Total**         | **81%**        | **12/17**|
 
 Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete

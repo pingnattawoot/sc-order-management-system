@@ -14,11 +14,34 @@ import type { Warehouse, ShipmentDetail } from '@/generated/graphql';
 import { WarehouseMarker } from './WarehouseMarker';
 import { CustomerMarker } from './CustomerMarker';
 
-// Component to fit map bounds to warehouses
-function FitBounds({ warehouses }: { warehouses: Warehouse[] }) {
+// Component to fit map bounds to warehouses and optionally customer location
+function FitBounds({
+  warehouses,
+  customerLocation,
+  activeWarehouseIds,
+}: {
+  warehouses: Warehouse[];
+  customerLocation?: [number, number] | null;
+  activeWarehouseIds?: Set<string>;
+}) {
   const map = useMap();
 
   useEffect(() => {
+    // If we have active warehouses and customer, fit to those specifically
+    if (customerLocation && activeWarehouseIds && activeWarehouseIds.size > 0) {
+      const activeWarehouses = warehouses.filter((w) => w.id && activeWarehouseIds.has(w.id));
+      const bounds: [number, number][] = [
+        customerLocation,
+        ...activeWarehouses.map((w) => [
+          parseFloat(w.latitude ?? '0'),
+          parseFloat(w.longitude ?? '0'),
+        ] as [number, number]),
+      ];
+      map.fitBounds(bounds as LatLngBoundsExpression, { padding: [80, 80], maxZoom: 10 });
+      return;
+    }
+
+    // Otherwise fit to all warehouses
     if (warehouses.length === 0) return;
 
     const bounds: LatLngBoundsExpression = warehouses.map((w) => [
@@ -27,7 +50,7 @@ function FitBounds({ warehouses }: { warehouses: Warehouse[] }) {
     ]);
 
     map.fitBounds(bounds, { padding: [50, 50] });
-  }, [map, warehouses]);
+  }, [map, warehouses, customerLocation, activeWarehouseIds]);
 
   return null;
 }
@@ -50,8 +73,11 @@ interface WarehouseMapProps {
   customerLocation?: [number, number] | null;
   activeShipments?: ShipmentDetail[];
   onLocationSelect?: (lat: number, lng: number) => void;
+  onCustomerMarkerClick?: () => void;
   height?: string;
   interactive?: boolean;
+  isOrderValid?: boolean; // Controls line color: green for valid, red for invalid
+  fitToShipments?: boolean; // When true, fit bounds to customer + active warehouses only
 }
 
 export function WarehouseMap({
@@ -59,8 +85,11 @@ export function WarehouseMap({
   customerLocation,
   activeShipments = [],
   onLocationSelect,
+  onCustomerMarkerClick,
   height = '500px',
   interactive = true,
+  isOrderValid = true,
+  fitToShipments = false,
 }: WarehouseMapProps) {
   // Get active warehouse IDs for highlighting
   const activeWarehouseIds = useMemo(() => {
@@ -109,8 +138,14 @@ export function WarehouseMap({
     }).filter(Boolean);
   }, [customerLocation, activeShipments, warehouses]);
 
+  // Line color based on order validity
+  const lineColor = isOrderValid ? '#22c55e' : '#ef4444'; // green-500 or red-500
+
   return (
-    <div style={{ height }} className="w-full rounded-lg overflow-hidden border">
+    <div
+      style={{ height }}
+      className={`w-full rounded-lg overflow-hidden border ${interactive ? 'cursor-crosshair' : ''}`}
+    >
       <MapContainer
         center={[20, 0]}
         zoom={2}
@@ -119,13 +154,18 @@ export function WarehouseMap({
         dragging={interactive}
         doubleClickZoom={interactive}
         zoomControl={interactive}
+        className={interactive ? '[&_.leaflet-container]:cursor-crosshair' : ''}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <FitBounds warehouses={warehouses} />
+        <FitBounds
+          warehouses={warehouses}
+          customerLocation={fitToShipments ? customerLocation : undefined}
+          activeWarehouseIds={fitToShipments ? activeWarehouseIds : undefined}
+        />
 
         {interactive && <MapClickHandler onLocationSelect={onLocationSelect} />}
 
@@ -135,7 +175,7 @@ export function WarehouseMap({
             key={line.id}
             positions={line.positions}
             pathOptions={{
-              color: '#22c55e',
+              color: lineColor,
               weight: 3,
               opacity: 0.7,
               dashArray: '10, 5',
@@ -156,10 +196,12 @@ export function WarehouseMap({
 
         {/* Customer location marker */}
         {customerLocation && (
-          <CustomerMarker position={customerLocation} />
+          <CustomerMarker
+            position={customerLocation}
+            onClick={onCustomerMarkerClick}
+          />
         )}
       </MapContainer>
     </div>
   );
 }
-

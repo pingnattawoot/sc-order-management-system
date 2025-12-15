@@ -34,10 +34,19 @@ import {
 
 type OrderQuote = NonNullable<VerifyOrderMutation['verifyOrder']>;
 
-// Helper to format cents as currency
+// Helper to format cents as currency with comma separators
 const formatCurrency = (cents: number | null | undefined) => {
   if (cents == null) return '$0.00';
-  return `$${(cents / 100).toFixed(2)}`;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(cents / 100);
+};
+
+// Helper to format numbers with comma separators
+const formatNumber = (num: number | null | undefined) => {
+  if (num == null) return '0';
+  return new Intl.NumberFormat('en-US').format(num);
 };
 
 export function NewOrderTab() {
@@ -138,7 +147,7 @@ export function NewOrderTab() {
           </p>
         </div>
         <Badge variant="outline" className="text-lg px-4 py-2">
-          {totalStock.toLocaleString()} units available
+          {formatNumber(totalStock)} units available
         </Badge>
       </div>
 
@@ -153,21 +162,23 @@ export function NewOrderTab() {
           customerLocation={selectedLocation}
           activeShipments={activeShipments}
           onLocationSelect={handleLocationSelect}
+          onCustomerMarkerClick={() => setIsSheetOpen(true)}
+          isOrderValid={quote?.isValid ?? true}
           height="500px"
         />
       )}
 
-      {/* Order Sheet */}
+      {/* Order Sheet - transparent overlay to see map */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-auto">
-          <SheetHeader>
+        <SheetContent transparentOverlay className="overflow-y-auto">
+          <SheetHeader className="p-0">
             <SheetTitle>Order Details</SheetTitle>
             <SheetDescription>
               Configure and verify your order before submitting
             </SheetDescription>
           </SheetHeader>
 
-          <div className="mt-6 space-y-6">
+          <div className="space-y-4">
             {/* Location Info */}
             <Card>
               <CardHeader className="pb-2">
@@ -267,7 +278,7 @@ export function NewOrderTab() {
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Subtotal ({quote.quantity} × {formatCurrency(quote.product?.unitPriceCents)})</span>
+                      <span>Subtotal ({formatNumber(quote.quantity)} × {formatCurrency(quote.product?.unitPriceCents)})</span>
                       <span>{formatCurrency(quote.subtotalCents)}</span>
                     </div>
                     {(quote.discount?.discountPercentage ?? 0) > 0 && (
@@ -311,11 +322,11 @@ export function NewOrderTab() {
                             <div>
                               <span className="font-medium">{shipment?.warehouseName}</span>
                               <span className="text-muted-foreground ml-2">
-                                ({shipment?.distanceKm?.toFixed(0)} km)
+                                ({formatNumber(Math.round(shipment?.distanceKm ?? 0))} km)
                               </span>
                             </div>
                             <div className="text-right">
-                              <span className="font-medium">{shipment?.quantity} units</span>
+                              <span className="font-medium">{formatNumber(shipment?.quantity)} units</span>
                               <span className="text-muted-foreground ml-2">
                                 {formatCurrency(shipment?.shippingCostCents)}
                               </span>

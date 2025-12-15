@@ -17,6 +17,12 @@ import {
 } from '@/components/ui/table';
 import { useGetWarehousesQuery, type Warehouse } from '@/graphql';
 
+// Helper to format numbers with comma separators
+const formatNumber = (num: number | null | undefined) => {
+  if (num == null) return '0';
+  return new Intl.NumberFormat('en-US').format(num);
+};
+
 // Stock level indicator
 const getStockLevel = (stock: number) => {
   if (stock >= 400) return { label: 'High', color: 'bg-green-500' };
@@ -69,7 +75,7 @@ export function StockTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Total Global Stock</CardDescription>
-            <CardTitle className="text-3xl">{totalStock.toLocaleString()}</CardTitle>
+            <CardTitle className="text-3xl">{formatNumber(totalStock)}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">units available</p>
@@ -89,7 +95,7 @@ export function StockTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Average Stock</CardDescription>
-            <CardTitle className="text-3xl">{avgStock.toLocaleString()}</CardTitle>
+            <CardTitle className="text-3xl">{formatNumber(avgStock)}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">units per warehouse</p>
@@ -159,7 +165,7 @@ export function StockTab() {
                         {parseFloat(warehouse.longitude ?? '0').toFixed(2)}°
                       </TableCell>
                       <TableCell className="text-right font-bold">
-                        {(warehouse.stock ?? 0).toLocaleString()}
+                        {formatNumber(warehouse.stock)}
                       </TableCell>
                       <TableCell>
                         <Badge className={level.color}>{level.label}</Badge>

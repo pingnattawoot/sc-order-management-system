@@ -74,4 +74,3 @@ query GetOrder($id: ID!) {
     }
   }
 }
-

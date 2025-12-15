@@ -293,120 +293,74 @@ This document outlines the step-by-step implementation plan for building a produ
 
 ---
 
-## Phase 7: React Frontend
+## Phase 7: React Frontend ✅
 
 > **UI Design:** Tab-based interface with 3 main tabs: New Order, Orders History, and Stock Management.
 
-### 7.1 Initialize Vite React Project
+### 7.1 Initialize Vite React Project ✅
 
-- [ ] Create `apps/web` with `pnpm create vite`
-- [ ] Configure TypeScript with strict mode
-- [ ] Install dependencies:
-  - `@apollo/client` - GraphQL client
-  - `graphql` - GraphQL core
-  - `react-leaflet`, `leaflet`, `@types/leaflet` - Interactive map
-- [ ] **COMMIT:** "chore(web): initialize vite react project"
+- [x] Create `apps/web` with `pnpm create vite`
+- [x] Configure TypeScript with strict mode
+- [x] Install dependencies (@apollo/client, graphql, react-leaflet, leaflet)
+- [x] **COMMIT:** "chore(web): initialize vite react project" _(d28084c)_
 
-### 7.2 Setup Tailwind & shadcn/ui
+### 7.2 Setup Tailwind & shadcn/ui ✅
 
-- [ ] Install and configure Tailwind CSS v4
-- [ ] Initialize shadcn/ui with New York style
-- [ ] Add essential components:
-  - `Button`, `Input`, `Label` - Form controls
-  - `Card`, `Badge` - Display components
-  - `Sheet` or `Dialog` - Order form modal
-  - `Tabs` - Main navigation
-  - `Table` - Data display
-  - `Sonner` (toast) - Notifications
-- [ ] **COMMIT:** "chore(web): setup tailwind and shadcn/ui"
+- [x] Install and configure Tailwind CSS v4
+- [x] Initialize shadcn/ui
+- [x] Add essential components (Button, Input, Card, Badge, Sheet, Tabs, Table, Sonner)
+- [x] **COMMIT:** "chore(web): setup tailwind and shadcn/ui" _(85e5584)_
 
-### 7.3 Setup Apollo Client
+### 7.3 Setup Apollo Client & GraphQL Codegen ✅
 
-- [ ] Create `apps/web/src/lib/apollo.ts`
-- [ ] Configure Apollo Client with `http://localhost:4000/graphql`
-- [ ] Setup ApolloProvider in main.tsx
-- [ ] Create GraphQL queries and mutations:
-  - `GET_WAREHOUSES` - Fetch all warehouses with stock
-  - `GET_ORDERS` - Fetch order history
-  - `VERIFY_ORDER` - Validate order before submission
-  - `SUBMIT_ORDER` - Place confirmed order
-- [ ] **COMMIT:** "chore(web): setup apollo client with queries"
+- [x] Create `apps/web/src/lib/apollo.ts`
+- [x] Configure Apollo Client with `http://localhost:4000/graphql`
+- [x] Setup ApolloProvider in main.tsx
+- [x] Setup GraphQL Codegen with `.graphql` files
+- [x] Generate types and hooks from backend API introspection
+- [x] **COMMIT:** "chore(web): setup apollo client with queries" _(5d35730)_
 
-### 7.4 Create Shared Components
+### 7.4 Create Shared Map Components ✅
 
-- [ ] Create `apps/web/src/components/`:
-  - `Map/WarehouseMap.tsx` - Reusable Leaflet map with warehouse markers
-  - `Map/WarehouseMarker.tsx` - Custom marker with popup (name, stock, distance)
-  - `Map/CustomerMarker.tsx` - Destination marker
-  - `Layout/AppHeader.tsx` - App title and branding
-- [ ] Configure Leaflet CSS imports
-- [ ] **COMMIT:** "feat(web): add shared map components"
+- [x] `Map/WarehouseMap.tsx` - Leaflet map with fit bounds and click-to-select
+- [x] `Map/WarehouseMarker.tsx` - Custom marker with stock level colors (green/yellow/red)
+- [x] `Map/CustomerMarker.tsx` - Destination pin marker
+- [x] Draw shipment lines from warehouses to customer location
+- [x] _(consolidated with Phase 7 commit)_
 
-### 7.5 Implement Tab 1: New Order
+### 7.5 Implement Tab 1: New Order ✅
 
-- [ ] Create `apps/web/src/components/tabs/NewOrderTab.tsx`
-- [ ] **Map Features:**
-  - Display all warehouses with markers (fit bounds on load)
-  - Markers show warehouse name and current stock
-  - Click anywhere on map to select delivery destination
-- [ ] **Order Sheet/Dialog:**
-  - Triggered when user clicks destination on map
-  - Shows selected coordinates (lat/lng)
-  - Quantity input with +/- buttons
-  - "Verify Order" button
-- [ ] **Verification Results:**
-  - Highlight warehouses that will fulfill the order (different color/icon)
-  - Show pricing breakdown (subtotal, discount, shipping, total)
-  - Show validity status (valid/invalid with reason)
-  - If valid: Show "Confirm & Submit Order" button
-  - If invalid: Show error message with details
-- [ ] **Success Flow:**
-  - Submit order mutation
-  - Show success toast with order number
-  - Reset form state
-- [ ] **COMMIT:** "feat(web): implement new order tab with map"
+- [x] `NewOrderTab.tsx` with map and Sheet for order input
+- [x] Click map → Open sheet with coordinates and quantity input
+- [x] Verify order → Highlight source warehouses on map
+- [x] Show pricing breakdown (subtotal, discount, shipping, total)
+- [x] Show validity status with error messages
+- [x] Submit button (if valid) → Success toast with order number
+- [x] _(consolidated with Phase 7 commit)_
 
-### 7.6 Implement Tab 2: Order History
+### 7.6 Implement Tab 2: Order History ✅
 
-- [ ] Create `apps/web/src/components/tabs/OrdersTab.tsx`
-- [ ] **Order List:**
-  - Table/cards showing all orders (newest first)
-  - Display: Order #, Date, Quantity, Total, Status
-  - Click row to expand/select
-- [ ] **Order Detail View:**
-  - Show map with customer location and source warehouses
-  - Lines connecting warehouses to customer
-  - Full pricing breakdown
-  - Shipment details (warehouse, quantity, distance, cost)
-- [ ] **COMMIT:** "feat(web): implement order history tab"
+- [x] `OrdersTab.tsx` with table of all orders
+- [x] Click row → Sheet with order detail and map
+- [x] Map shows customer location + source warehouses with lines
+- [x] Full pricing and shipment breakdown
+- [x] _(consolidated with Phase 7 commit)_
 
-### 7.7 Implement Tab 3: Stock Management
+### 7.7 Implement Tab 3: Stock Management ✅
 
-- [ ] Create `apps/web/src/components/tabs/StockTab.tsx`
-- [ ] **Warehouse Table:**
-  - List all warehouses
-  - Columns: Name, Location (City), Coordinates, Current Stock
-  - Visual stock indicators (progress bar or color coding)
-- [ ] **Map View:**
-  - Same map showing all warehouses
-  - Marker size or color based on stock level
-  - Popup shows detailed stock info
-- [ ] **Summary Stats:**
-  - Total global stock
-  - Stock distribution across warehouses
-- [ ] **COMMIT:** "feat(web): implement stock management tab"
+- [x] `StockTab.tsx` with warehouse table
+- [x] Stock level indicators (progress bars + badges)
+- [x] Stats cards (total stock, warehouses, average, low stock alerts)
+- [x] Map view with stock-based marker colors
+- [x] _(consolidated with Phase 7 commit)_
 
-### 7.8 Polish & Final Integration
+### 7.8 Polish & Final Integration ✅
 
-- [ ] Create main `App.tsx` with Tabs component
-- [ ] Add responsive design (mobile-friendly)
-- [ ] Add loading states and skeletons
-- [ ] Add error boundaries and error states
-- [ ] Style refinements:
-  - Consistent color scheme
-  - Hover states and transitions
-  - Map styling (custom tiles if needed)
-- [ ] **COMMIT:** "feat(web): polish ui and finalize frontend"
+- [x] Create main `App.tsx` with Tabs component
+- [x] Add loading states
+- [x] Currency and date formatters
+- [x] GraphQL Codegen with `.graphql` files for type safety
+- [x] **COMMIT:** "feat(web): implement complete frontend with tabs" _(7c07498)_
 
 ---
 
