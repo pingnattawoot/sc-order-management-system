@@ -1,0 +1,24 @@
+{
+  "name": "sc-order-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ScreenCloud Order Management System for SCOS devices",
+  "packageManager": "pnpm@10.25.0",
+  "scripts": {
+    "dev": "pnpm --filter api dev & pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm --filter api test",
+    "lint": "pnpm -r lint",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "setup": "pnpm install && pnpm docker:up && pnpm db:migrate && pnpm db:seed",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:seed": "pnpm --filter api db:seed",
+    "db:studio": "pnpm --filter api db:studio"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
