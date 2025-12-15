@@ -65,31 +65,35 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
-## Phase 3: Server & Entry Point
+## Phase 3: Server & Entry Point ✅
 
 > Start the server early for immediate feedback during development.
 
-### 3.1 Project Structure
+### 3.1 Project Structure ✅
 
-- [ ] Create folder structure (src/lib/, src/domain/, src/graphql/)
-- [ ] **COMMIT:** `chore(api): setup project folder structure`
+- [x] Create folder structure (src/lib/, src/config/, src/domain/, src/graphql/)
+- [x] Create `src/config/index.ts` (centralized config)
+- [x] Create `src/lib/decimal.ts` (Decimal.js utilities)
+- [x] _(consolidated with 3.2-3.4 commit)_
 
-### 3.2 Prisma Client Singleton
+### 3.2 Prisma Client Singleton ✅
 
-- [ ] Create `lib/prisma.ts` with pg adapter
-- [ ] **COMMIT:** `chore(api): add prisma client singleton`
+- [x] Create `lib/prisma.ts` with pg adapter
+- [x] Add connection pooling, health check, graceful disconnect
+- [x] _(consolidated with 3.3-3.4 commit)_
 
-### 3.3 Fastify Server
+### 3.3 Fastify Server ✅
 
-- [ ] Create `server.ts`
-- [ ] Configure logger, CORS, health check
-- [ ] Add graceful shutdown
-- [ ] **COMMIT:** `feat(api): setup fastify server`
+- [x] Create `server.ts`
+- [x] Configure logger (pino-pretty in dev), CORS, health check
+- [x] Add graceful shutdown (SIGTERM, SIGINT)
+- [x] _(consolidated with 3.4 commit)_
 
-### 3.4 Entry Point
+### 3.4 Entry Point ✅
 
-- [ ] Create `index.ts`
-- [ ] **COMMIT:** `feat(api): add server entry point`
+- [x] Create `index.ts`
+- [x] Add @fastify/cors, pino-pretty dependencies
+- [x] **COMMIT:** `feat(api): setup fastify server with health check`
 
 ---
 
@@ -352,12 +356,12 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 | ----------------- | -------------- | -------- |
 | 1. Infrastructure | ✅ Complete    | 3/3      |
 | 2. Database       | ✅ Complete    | 1/1      |
-| 3. Server Setup   | ⬜ Not Started | 0/4      |
+| 3. Server Setup   | ✅ Complete    | 1/1      |
 | 4. Testing Setup  | ⬜ Not Started | 0/2      |
 | 5. Domain Logic   | ⬜ Not Started | 0/5      |
 | 6. GraphQL API    | ⬜ Not Started | 0/6      |
 | 7. Frontend       | ⬜ Not Started | 0/12     |
 | 8. DevOps         | ⬜ Not Started | 0/5      |
-| **Total**         | **10%**        | **4/38** |
+| **Total**         | **14%**        | **5/35** |
 
 Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete

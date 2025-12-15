@@ -91,13 +91,13 @@ This document outlines the step-by-step implementation plan for building a produ
 
 ---
 
-## Phase 3: Server & Entry Point
+## Phase 3: Server & Entry Point ✅
 
 > **Why Phase 3?** Start the server early so we can see changes immediately during development.
 
-### 3.1 Setup Project Structure
+### 3.1 Setup Project Structure ✅
 
-- [ ] Create folder structure in `apps/api/src`:
+- [x] Create folder structure in `apps/api/src`:
   ```
   src/
   ├── index.ts           # Entry point
@@ -107,39 +107,43 @@ This document outlines the step-by-step implementation plan for building a produ
   ├── lib/               # Shared utilities
   │   ├── prisma.ts      # Prisma client singleton
   │   ├── decimal.ts     # Decimal.js utilities
-  │   └── haversine.ts   # Distance calculation
-  ├── domain/            # Business logic
+  │   └── haversine.ts   # Distance calculation (Phase 5)
+  ├── domain/            # Business logic (Phase 5)
   │   ├── pricing/
   │   ├── logistics/
   │   └── orders/
-  └── graphql/           # GraphQL layer
+  └── graphql/           # GraphQL layer (Phase 6)
   ```
-- [ ] **COMMIT:** "chore(api): setup project folder structure"
+- [x] _(consolidated with 3.4 commit)_
 
-### 3.2 Create Prisma Client Singleton
+### 3.2 Create Prisma Client Singleton ✅
 
-- [ ] Create `apps/api/src/lib/prisma.ts`
-- [ ] Implement singleton pattern with pg adapter for Prisma 7
-- [ ] Add connection pooling configuration
-- [ ] **COMMIT:** "chore(api): add prisma client singleton"
+- [x] Create `apps/api/src/lib/prisma.ts`
+- [x] Implement singleton pattern with pg adapter for Prisma 7
+- [x] Add connection pooling configuration (max: 20, idle: 30s, timeout: 2s)
+- [x] Add `disconnectPrisma()` for graceful shutdown
+- [x] Add `checkDatabaseHealth()` for health endpoint
+- [x] _(consolidated with 3.4 commit)_
 
-### 3.3 Create Fastify Server
+### 3.3 Create Fastify Server ✅
 
-- [ ] Create `apps/api/src/server.ts`
-- [ ] Configure Fastify with:
-  - Logger (pino)
-  - CORS
-  - Health check endpoint (`/health`)
-- [ ] Add graceful shutdown handling
-- [ ] **COMMIT:** "feat(api): setup fastify server"
+- [x] Create `apps/api/src/server.ts`
+- [x] Configure Fastify with:
+  - Logger (pino-pretty in dev, JSON in prod)
+  - CORS (@fastify/cors)
+  - Health check endpoint (`/health`) with DB status
+  - Root endpoint (`/`) with API info
+- [x] Add graceful shutdown handling (SIGTERM, SIGINT)
+- [x] _(consolidated with 3.4 commit)_
 
-### 3.4 Create Entry Point
+### 3.4 Create Entry Point ✅
 
-- [ ] Create `apps/api/src/index.ts`
-- [ ] Load environment variables
-- [ ] Start server with port configuration
-- [ ] Add startup logging
-- [ ] **COMMIT:** "feat(api): add server entry point"
+- [x] Create `apps/api/src/index.ts`
+- [x] Create `apps/api/src/config/index.ts` (centralized config)
+- [x] Create `apps/api/src/lib/decimal.ts` (Decimal.js utilities)
+- [x] Add @fastify/cors, pino-pretty dependencies
+- [x] Server runs at http://localhost:4000
+- [x] **COMMIT:** "feat(api): setup fastify server with health check"
 
 ---
 
