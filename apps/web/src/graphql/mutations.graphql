@@ -1,0 +1,67 @@
+# Order Mutations
+
+mutation VerifyOrder($input: OrderInput!) {
+  verifyOrder(input: $input) {
+    isValid
+    errorMessage
+    quantity
+    customerLatitude
+    customerLongitude
+    product {
+      id
+      name
+      unitPriceCents
+      weightGrams
+    }
+    discount {
+      originalAmountCents
+      discountAmountCents
+      discountedAmountCents
+      discountPercentage
+      tierName
+    }
+    shipments {
+      warehouseId
+      warehouseName
+      quantity
+      distanceKm
+      shippingCostCents
+    }
+    shippingValidity {
+      isValid
+      shippingCostCents
+      orderAmountCents
+      shippingPercentage
+      maxAllowedShippingCents
+      overLimitCents
+    }
+    totalShippingCostCents
+    grandTotalCents
+    subtotalCents
+  }
+}
+
+mutation SubmitOrder($input: OrderInput!) {
+  submitOrder(input: $input) {
+    id
+    orderNumber
+    quantity
+    customerLatitude
+    customerLongitude
+    subtotalCents
+    discountCents
+    shippingCents
+    totalCents
+    status
+    createdAt
+    shipments {
+      id
+      warehouseId
+      warehouseName
+      quantity
+      distanceKm
+      shippingCents
+    }
+  }
+}
+

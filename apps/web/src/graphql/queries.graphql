@@ -1,0 +1,77 @@
+# Warehouse Queries
+
+query GetWarehouses {
+  warehouses {
+    id
+    name
+    latitude
+    longitude
+    stock
+    createdAt
+  }
+  totalStock
+}
+
+# Product Queries
+
+query GetProducts {
+  products {
+    id
+    sku
+    name
+    description
+    priceInCents
+    weightGrams
+  }
+}
+
+# Order Queries
+
+query GetOrders($limit: Int) {
+  orders(limit: $limit) {
+    id
+    orderNumber
+    quantity
+    customerLatitude
+    customerLongitude
+    subtotalCents
+    discountCents
+    shippingCents
+    totalCents
+    status
+    createdAt
+    shipments {
+      id
+      warehouseId
+      warehouseName
+      quantity
+      distanceKm
+      shippingCents
+    }
+  }
+}
+
+query GetOrder($id: ID!) {
+  order(id: $id) {
+    id
+    orderNumber
+    quantity
+    customerLatitude
+    customerLongitude
+    subtotalCents
+    discountCents
+    shippingCents
+    totalCents
+    status
+    createdAt
+    shipments {
+      id
+      warehouseId
+      warehouseName
+      quantity
+      distanceKm
+      shippingCents
+    }
+  }
+}
+

@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ApolloProvider } from '@apollo/client';
+import { ApolloProvider } from '@apollo/client/react';
 import { apolloClient } from './lib/apollo';
 import { Toaster } from '@/components/ui/sonner';
 import App from './App';
