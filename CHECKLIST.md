@@ -4,64 +4,64 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
-## Phase 1: Project Infrastructure Setup
+## Phase 1: Project Infrastructure Setup ✅
 
-### 1.1 Initialize Monorepo Structure
+### 1.1 Initialize Monorepo Structure ✅
 
-- [ ] Create root `package.json` with pnpm workspaces
-- [ ] Create `pnpm-workspace.yaml`
-- [ ] Create folder structure (apps/, packages/, docs/, docker/)
-- [ ] Initialize git with `.gitignore`
-- [ ] **COMMIT:** `chore: initialize monorepo structure`
+- [x] Create root `package.json` with pnpm workspaces
+- [x] Create `pnpm-workspace.yaml`
+- [x] Create folder structure (apps/, packages/, docs/, docker/)
+- [x] Initialize git with `.gitignore`
+- [x] **COMMIT:** `chore: initialize monorepo structure` _(d656bc1)_
 
-### 1.2 Setup Backend Project
+### 1.2 Setup Backend Project ✅
 
-- [ ] Create `apps/api/package.json`
-- [ ] Install core deps (fastify, prisma, graphql-yoga, pothos, decimal.js)
-- [ ] Install dev deps (typescript, vitest, eslint, prettier)
-- [ ] Create `tsconfig.json` (strict mode)
-- [ ] Create linting configs
-- [ ] **COMMIT:** `chore(api): setup backend project with dependencies`
+- [x] Create `apps/api/package.json`
+- [x] Install core deps (fastify, prisma, graphql-yoga, pothos, decimal.js)
+- [x] Install dev deps (typescript, vitest, eslint, prettier)
+- [x] Create `tsconfig.json` (strict mode)
+- [x] Create linting configs
+- [x] **COMMIT:** `chore(api): setup backend project with dependencies` _(92694fe)_
 
-### 1.3 Setup Docker Environment
+### 1.3 Setup Docker Environment ✅
 
-- [ ] Create `docker-compose.yml` (PostgreSQL)
-- [ ] Create `.env.example`
-- [ ] **COMMIT:** `chore: add docker-compose for PostgreSQL`
+- [x] Create `docker-compose.yml` (PostgreSQL)
+- [x] Create `.env.example`
+- [x] **COMMIT:** `chore: add docker-compose for PostgreSQL` _(121da4b)_
 
 ---
 
-## Phase 2: Database Layer
+## Phase 2: Database Layer ✅
 
-### 2.1 Initialize Prisma
+### 2.1 Initialize Prisma ✅
 
-- [ ] Run `pnpm exec prisma init`
-- [ ] Configure `.env`
-- [ ] **COMMIT:** `chore(api): initialize prisma`
+- [x] Run `pnpm exec prisma init`
+- [x] Configure `.env` and `prisma.config.ts` (Prisma 7)
+- [x] **COMMIT:** `feat(api): add prisma 7 database layer with seed data`
 
-### 2.2 Database Schema
+### 2.2 Database Schema ✅
 
-- [ ] Create `Product` model
-- [ ] Create `Warehouse` model
-- [ ] Create `Order` model
-- [ ] Create `OrderShipment` model
-- [ ] Add `OrderStatus` enum
-- [ ] Add indexes
-- [ ] **COMMIT:** `feat(api): add prisma database schema`
+- [x] Create `Product` model
+- [x] Create `Warehouse` model
+- [x] Create `Order` model
+- [x] Create `OrderShipment` model
+- [x] Add `OrderStatus` enum
+- [x] Add indexes
+- [x] _(included in Phase 2 commit)_
 
-### 2.3 Migrations
+### 2.3 Migrations ✅
 
-- [ ] Run initial migration
-- [ ] **COMMIT:** `feat(api): add initial database migration`
+- [x] Run initial migration (`20251215093710_init`)
+- [x] _(included in Phase 2 commit)_
 
-### 2.4 Seed Data
+### 2.4 Seed Data ✅
 
-- [ ] Create `prisma/seed.ts`
-- [ ] Add product seed (SCOS P1 Pro)
-- [ ] Add warehouse seeds (6 locations)
-- [ ] Configure prisma.seed in package.json
-- [ ] Run seed
-- [ ] **COMMIT:** `feat(api): add seed data for products and warehouses`
+- [x] Create `prisma/seed.ts` with pg adapter
+- [x] Add product seed (SCOS P1 Pro: $150, 365g)
+- [x] Add warehouse seeds (6 locations, 2,556 total units)
+- [x] Configure prisma.seed in prisma.config.ts
+- [x] Run seed
+- [x] _(included in Phase 2 commit)_
 
 ---
 
@@ -368,14 +368,14 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 | Phase             | Status         | Commits  |
 | ----------------- | -------------- | -------- |
-| 1. Infrastructure | ⬜ Not Started | 0/3      |
-| 2. Database       | ⬜ Not Started | 0/4      |
+| 1. Infrastructure | ✅ Complete    | 3/3      |
+| 2. Database       | ✅ Complete    | 1/1      |
 | 3. Domain Logic   | ⬜ Not Started | 0/7      |
 | 4. GraphQL API    | ⬜ Not Started | 0/6      |
 | 5. Server         | ⬜ Not Started | 0/3      |
 | 6. Testing        | ⬜ Not Started | 0/5      |
 | 7. Frontend       | ⬜ Not Started | 0/12     |
 | 8. DevOps         | ⬜ Not Started | 0/5      |
-| **Total**         | **0%**         | **0/45** |
+| **Total**         | **10%**        | **4/42** |
 
 Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete

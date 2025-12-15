@@ -1,0 +1,103 @@
+// =============================================
+// ScreenCloud Order Management System
+// Prisma Database Schema (Prisma 7)
+// =============================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================
+// Enums
+// =============================================
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+// =============================================
+// Models
+// =============================================
+
+/// Product model - represents items available for sale
+/// Currently only SCOS Station P1 Pro, but designed for future expansion
+model Product {
+  id           String   @id @default(uuid())
+  sku          String   @unique
+  name         String
+  description  String?
+  priceInCents Int      /// Store money as cents to avoid floating-point issues
+  weightGrams  Int      /// Weight in grams for shipping calculation
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("products")
+}
+
+/// Warehouse model - represents distribution centers worldwide
+/// Stock is tracked per warehouse for the single product (SCOS P1 Pro)
+model Warehouse {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  latitude  Decimal  @db.Decimal(10, 6)
+  longitude Decimal  @db.Decimal(10, 6)
+  stock     Int      @default(0) /// Current stock level
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shipments OrderShipment[]
+
+  @@index([stock])
+  @@map("warehouses")
+}
+
+/// Order model - represents a customer order
+/// Contains pricing breakdown and customer location
+model Order {
+  id            String      @id @default(uuid())
+  orderNumber   String      @unique /// Human-readable order number (e.g., ORD-20241215-XXXX)
+  quantity      Int
+  customerLat   Decimal     @db.Decimal(10, 6)
+  customerLong  Decimal     @db.Decimal(10, 6)
+  subtotalCents Int         /// Price × Quantity (before discount)
+  discountCents Int         /// Volume discount amount
+  shippingCents Int         /// Total shipping cost
+  totalCents    Int         /// Final total (subtotal - discount + shipping)
+  status        OrderStatus @default(COMPLETED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shipments OrderShipment[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+/// OrderShipment model - tracks which warehouse(s) fulfilled an order
+/// An order can be split across multiple warehouses
+model OrderShipment {
+  id            String    @id @default(uuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  warehouseId   String
+  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
+  quantity      Int       /// Number of units shipped from this warehouse
+  distanceKm    Decimal   @db.Decimal(10, 2) /// Distance from warehouse to customer
+  shippingCents Int       /// Shipping cost for this shipment
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([warehouseId])
+  @@map("order_shipments")
+}
