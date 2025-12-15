@@ -5,7 +5,7 @@
 This document outlines the step-by-step implementation plan for building a production-ready Order Management System for ScreenCloud's SCOS devices.
 
 **Estimated Time:** 4-6 hours  
-**Tech Stack:** TypeScript, Node.js, Fastify, Prisma, GraphQL (Pothos), PostgreSQL, React (Vite), shadcn/ui, Leaflet
+**Tech Stack:** TypeScript, Node.js, Fastify, Prisma 7, GraphQL (Pothos), PostgreSQL, React (Vite), shadcn/ui, Leaflet
 
 ---
 
@@ -63,66 +63,14 @@ This document outlines the step-by-step implementation plan for building a produ
 - [x] Run `pnpm exec prisma init` in `apps/api`
 - [x] Configure `DATABASE_URL` in `.env`
 - [x] Configure `prisma.config.ts` for Prisma 7
-- [x] **COMMIT:** "feat(api): add prisma 7 database layer with seed data"
+- [x] **COMMIT:** "feat(api): add prisma 7 database layer with seed data" _(b97937e)_
 
 ### 2.2 Design Database Schema ✅
 
-- [x] Create `Product` model:
-  ```prisma
-  model Product {
-    id          String   @id @default(uuid())
-    sku         String   @unique
-    name        String
-    priceInCents Int     // Store money as cents to avoid float issues
-    weightGrams  Int
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-  }
-  ```
-- [x] Create `Warehouse` model:
-  ```prisma
-  model Warehouse {
-    id        String   @id @default(uuid())
-    name      String   @unique
-    latitude  Decimal  @db.Decimal(10, 6)
-    longitude Decimal  @db.Decimal(10, 6)
-    stock     Int      @default(0)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-  }
-  ```
-- [x] Create `Order` model:
-  ```prisma
-  model Order {
-    id              String        @id @default(uuid())
-    orderNumber     String        @unique
-    quantity        Int
-    customerLat     Decimal       @db.Decimal(10, 6)
-    customerLong    Decimal       @db.Decimal(10, 6)
-    subtotalCents   Int
-    discountCents   Int
-    shippingCents   Int
-    totalCents      Int
-    status          OrderStatus   @default(COMPLETED)
-    createdAt       DateTime      @default(now())
-    updatedAt       DateTime      @updatedAt
-    shipments       OrderShipment[]
-  }
-  ```
-- [x] Create `OrderShipment` model (tracks which warehouse ships what):
-  ```prisma
-  model OrderShipment {
-    id            String    @id @default(uuid())
-    orderId       String
-    order         Order     @relation(fields: [orderId], references: [id])
-    warehouseId   String
-    warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
-    quantity      Int
-    distanceKm    Decimal   @db.Decimal(10, 2)
-    shippingCents Int
-    createdAt     DateTime  @default(now())
-  }
-  ```
+- [x] Create `Product` model
+- [x] Create `Warehouse` model
+- [x] Create `Order` model
+- [x] Create `OrderShipment` model
 - [x] Add `OrderStatus` enum: `PENDING`, `COMPLETED`, `CANCELLED`
 - [x] Add necessary indexes for performance
 - [x] _(included in Phase 2 commit)_
@@ -136,23 +84,16 @@ This document outlines the step-by-step implementation plan for building a produ
 ### 2.4 Create Seed Data ✅
 
 - [x] Create `apps/api/prisma/seed.ts` with `@prisma/adapter-pg`
-- [x] Add SCOS Station P1 Pro product data:
-  - Price: $150 (15000 cents)
-  - Weight: 365g
-- [x] Add 6 warehouse seed data with coordinates and stock:
-  - Los Angeles (LAX): 33.9425, -118.408056, stock: 355
-  - New York (JFK): 40.639722, -73.778889, stock: 578
-  - São Paulo (GRU): -23.435556, -46.473056, stock: 265
-  - Paris (CDG): 49.009722, 2.547778, stock: 694
-  - Warsaw (WAW): 52.165833, 20.967222, stock: 245
-  - Hong Kong (HKG): 22.308889, 113.914444, stock: 419
+- [x] Add SCOS Station P1 Pro product data ($150, 365g)
+- [x] Add 6 warehouse seed data (2,556 total units)
 - [x] Configure `migrations.seed` in `prisma.config.ts`
-- [x] Run `pnpm exec prisma db seed` - Total: 2,556 units
 - [x] _(included in Phase 2 commit)_
 
 ---
 
-## Phase 3: Core Domain Logic
+## Phase 3: Server & Entry Point
+
+> **Why Phase 3?** Start the server early so we can see changes immediately during development.
 
 ### 3.1 Setup Project Structure
 
@@ -169,41 +110,94 @@ This document outlines the step-by-step implementation plan for building a produ
   │   └── haversine.ts   # Distance calculation
   ├── domain/            # Business logic
   │   ├── pricing/
-  │   │   ├── discount.ts
-  │   │   └── shipping.ts
   │   ├── logistics/
-  │   │   └── warehouse-optimizer.ts
   │   └── orders/
-  │       ├── order.service.ts
-  │       └── order.types.ts
   └── graphql/           # GraphQL layer
-      ├── schema.ts
-      ├── context.ts
-      └── resolvers/
   ```
 - [ ] **COMMIT:** "chore(api): setup project folder structure"
 
-### 3.2 Implement Haversine Distance Calculation
+### 3.2 Create Prisma Client Singleton
+
+- [ ] Create `apps/api/src/lib/prisma.ts`
+- [ ] Implement singleton pattern with pg adapter for Prisma 7
+- [ ] Add connection pooling configuration
+- [ ] **COMMIT:** "chore(api): add prisma client singleton"
+
+### 3.3 Create Fastify Server
+
+- [ ] Create `apps/api/src/server.ts`
+- [ ] Configure Fastify with:
+  - Logger (pino)
+  - CORS
+  - Health check endpoint (`/health`)
+- [ ] Add graceful shutdown handling
+- [ ] **COMMIT:** "feat(api): setup fastify server"
+
+### 3.4 Create Entry Point
+
+- [ ] Create `apps/api/src/index.ts`
+- [ ] Load environment variables
+- [ ] Start server with port configuration
+- [ ] Add startup logging
+- [ ] **COMMIT:** "feat(api): add server entry point"
+
+---
+
+## Phase 4: Testing Setup
+
+> **Why Phase 4?** Setup testing infrastructure before writing domain logic so we can test each function as we implement it.
+
+### 4.1 Setup Vitest
+
+- [ ] Create `apps/api/vitest.config.ts`
+- [ ] Configure test environment
+- [ ] Add test utilities and helpers
+- [ ] Setup test database configuration
+- [ ] **COMMIT:** "chore(api): setup vitest testing framework"
+
+### 4.2 Create Test Helpers
+
+- [ ] Create `apps/api/src/__tests__/helpers/`
+- [ ] Add database setup/teardown utilities
+- [ ] Add mock factories for test data
+- [ ] **COMMIT:** "chore(api): add test helpers"
+
+---
+
+## Phase 5: Core Domain Logic
+
+> **Note:** Each section includes writing tests alongside implementation.
+
+### 5.1 Implement Haversine Distance Calculation
 
 - [ ] Create `apps/api/src/lib/haversine.ts`
 - [ ] Implement `calculateDistanceKm(lat1, lon1, lat2, lon2)` function
 - [ ] Use Decimal.js for precise calculations
 - [ ] Add JSDoc documentation
-- [ ] **COMMIT:** "feat(api): implement haversine distance calculation"
+- [ ] **TEST:** Create `apps/api/src/lib/__tests__/haversine.test.ts`
+  - Test LA to New York distance
+  - Test Paris to Hong Kong distance
+  - Test same point (0 distance)
+  - Test antipodal points
+- [ ] **COMMIT:** "feat(api): implement haversine distance calculation with tests"
 
-### 3.3 Implement Pricing Logic
+### 5.2 Implement Pricing Logic - Discounts
 
 - [ ] Create `apps/api/src/domain/pricing/discount.ts`
 - [ ] Implement volume discount tiers:
-  - 25+ units: 5% discount
-  - 50+ units: 10% discount
-  - 100+ units: 15% discount
+  - 1-24 units: 0% discount
+  - 25-49 units: 5% discount
+  - 50-99 units: 10% discount
+  - 100-249 units: 15% discount
   - 250+ units: 20% discount
 - [ ] Create `calculateDiscount(quantity, unitPriceCents)` function
 - [ ] Use Decimal.js for calculations
-- [ ] **COMMIT:** "feat(api): implement volume discount calculation"
+- [ ] **TEST:** Create `apps/api/src/domain/pricing/__tests__/discount.test.ts`
+  - Test all discount tiers
+  - Test boundary conditions (24→25, 49→50, etc.)
+- [ ] **COMMIT:** "feat(api): implement volume discount calculation with tests"
 
-### 3.4 Implement Shipping Cost Calculation
+### 5.3 Implement Shipping Cost Calculation
 
 - [ ] Create `apps/api/src/domain/pricing/shipping.ts`
 - [ ] Implement `calculateShippingCost(distanceKm, weightGrams, quantity)`:
@@ -212,23 +206,31 @@ This document outlines the step-by-step implementation plan for building a produ
 - [ ] Create `isShippingCostValid(shippingCents, orderAmountAfterDiscount)`:
   - Returns false if shipping > 15% of order amount
 - [ ] Use Decimal.js for all monetary calculations
-- [ ] **COMMIT:** "feat(api): implement shipping cost calculation"
+- [ ] **TEST:** Create `apps/api/src/domain/pricing/__tests__/shipping.test.ts`
+  - Test shipping cost formula
+  - Test 15% validity rule
+  - Test edge cases
+- [ ] **COMMIT:** "feat(api): implement shipping cost calculation with tests"
 
-### 3.5 Implement Warehouse Optimizer (Core Algorithm)
+### 5.4 Implement Warehouse Optimizer (Core Algorithm)
 
 - [ ] Create `apps/api/src/domain/logistics/warehouse-optimizer.ts`
 - [ ] Implement `WarehouseOptimizer` class with methods:
-  - `findOptimalShipments(customerLat, customerLong, quantity)`:
-    1. Fetch all warehouses with stock > 0
-    2. Calculate distance from each warehouse to customer
-    3. Sort warehouses by distance (ascending)
-    4. Greedy allocation: fill from nearest warehouse first
-    5. Return allocation plan with per-warehouse shipping costs
+  - `findOptimalShipments(customerLat, customerLong, quantity, warehouses)`:
+    1. Calculate distance from each warehouse to customer
+    2. Sort warehouses by distance (ascending)
+    3. Greedy allocation: fill from nearest warehouse first
+    4. Return allocation plan with per-warehouse shipping costs
 - [ ] Handle edge case: not enough total stock
 - [ ] Return detailed breakdown for each warehouse
-- [ ] **COMMIT:** "feat(api): implement greedy warehouse optimizer"
+- [ ] **TEST:** Create `apps/api/src/domain/logistics/__tests__/warehouse-optimizer.test.ts`
+  - Test single warehouse fulfillment
+  - Test multi-warehouse split
+  - Test insufficient stock error
+  - Test nearest-first selection
+- [ ] **COMMIT:** "feat(api): implement greedy warehouse optimizer with tests"
 
-### 3.6 Implement Order Service
+### 5.5 Implement Order Service
 
 - [ ] Create `apps/api/src/domain/orders/order.service.ts`
 - [ ] Implement `OrderService` class with methods:
@@ -244,27 +246,25 @@ This document outlines the step-by-step implementation plan for building a produ
     - Create order and shipment records
     - Generate unique order number
 - [ ] Add proper error handling
-- [ ] **COMMIT:** "feat(api): implement order service with verification and submission"
-
-### 3.7 Setup Prisma Client Singleton
-
-- [ ] Create `apps/api/src/lib/prisma.ts`
-- [ ] Implement singleton pattern for Prisma client
-- [ ] Add connection pooling configuration
-- [ ] **COMMIT:** "chore(api): add prisma client singleton"
+- [ ] **TEST:** Create `apps/api/src/domain/orders/__tests__/order.service.test.ts`
+  - Test order verification flow
+  - Test order submission flow
+  - Test insufficient stock handling
+  - Test invalid shipping cost rejection
+  - Test concurrent order handling
+- [ ] **COMMIT:** "feat(api): implement order service with tests"
 
 ---
 
-## Phase 4: GraphQL API Layer
+## Phase 6: GraphQL API Layer
 
-### 4.1 Setup Pothos Schema Builder
+### 6.1 Setup Pothos Schema Builder
 
-- [ ] Install `@pothos/plugin-prisma` and generate types
 - [ ] Create `apps/api/src/graphql/builder.ts`
-- [ ] Configure Pothos with Prisma plugin
+- [ ] Configure Pothos with custom scalars for Decimal
 - [ ] **COMMIT:** "chore(api): setup pothos graphql schema builder"
 
-### 4.2 Define GraphQL Types
+### 6.2 Define GraphQL Types
 
 - [ ] Create `apps/api/src/graphql/types/`:
   - `product.ts` - Product type
@@ -275,7 +275,7 @@ This document outlines the step-by-step implementation plan for building a produ
 - [ ] Define custom scalars for Decimal handling
 - [ ] **COMMIT:** "feat(api): add graphql type definitions"
 
-### 4.3 Implement Queries
+### 6.3 Implement Queries
 
 - [ ] Create `apps/api/src/graphql/resolvers/queries.ts`
 - [ ] Implement queries:
@@ -286,7 +286,7 @@ This document outlines the step-by-step implementation plan for building a produ
   - `order(id)` - Get single order with shipment details
 - [ ] **COMMIT:** "feat(api): add graphql queries"
 
-### 4.4 Implement Mutations
+### 6.4 Implement Mutations
 
 - [ ] Create `apps/api/src/graphql/resolvers/mutations.ts`
 - [ ] Implement mutations:
@@ -295,104 +295,21 @@ This document outlines the step-by-step implementation plan for building a produ
   - `submitOrder(quantity, latitude, longitude)` → Order
     - Returns: created order with order number
 - [ ] Add input validation
-- [ ] **COMMIT:** "feat(api): add graphql mutations for order verification and submission"
+- [ ] **COMMIT:** "feat(api): add graphql mutations"
 
-### 4.5 Setup GraphQL Yoga Server
+### 6.5 Integrate GraphQL with Fastify
 
 - [ ] Create `apps/api/src/graphql/yoga.ts`
-- [ ] Integrate with Fastify
+- [ ] Integrate GraphQL Yoga with Fastify
 - [ ] Setup GraphQL context with Prisma and services
 - [ ] Enable GraphiQL playground in development
 - [ ] **COMMIT:** "feat(api): integrate graphql-yoga with fastify"
 
-### 4.6 Generate GraphQL Schema File
+### 6.6 Generate GraphQL Schema File
 
 - [ ] Add script to generate `schema.graphql` file
 - [ ] Configure codegen for type generation (client use)
 - [ ] **COMMIT:** "chore(api): add graphql schema generation"
-
----
-
-## Phase 5: Server & Entry Point
-
-### 5.1 Create Fastify Server
-
-- [ ] Create `apps/api/src/server.ts`
-- [ ] Configure Fastify with:
-  - Logger (pino)
-  - CORS
-  - Health check endpoint
-  - GraphQL route
-- [ ] Add graceful shutdown handling
-- [ ] **COMMIT:** "feat(api): setup fastify server with graphql"
-
-### 5.2 Create Entry Point
-
-- [ ] Create `apps/api/src/index.ts`
-- [ ] Load environment variables
-- [ ] Start server with port configuration
-- [ ] Add startup logging
-- [ ] **COMMIT:** "feat(api): add server entry point"
-
-### 5.3 Add Development Scripts
-
-- [ ] Add scripts to `package.json`:
-  - `dev` - Run with tsx watch mode
-  - `build` - Build TypeScript
-  - `start` - Run production build
-  - `db:migrate` - Run migrations
-  - `db:seed` - Seed database
-  - `db:studio` - Open Prisma Studio
-- [ ] **COMMIT:** "chore(api): add development scripts"
-
----
-
-## Phase 6: Testing
-
-### 6.1 Setup Vitest
-
-- [ ] Create `apps/api/vitest.config.ts`
-- [ ] Configure test environment
-- [ ] Add test utilities and helpers
-- [ ] **COMMIT:** "chore(api): setup vitest testing framework"
-
-### 6.2 Unit Tests for Haversine
-
-- [ ] Create `apps/api/src/lib/__tests__/haversine.test.ts`
-- [ ] Test known distance calculations:
-  - LA to New York
-  - Paris to Hong Kong
-  - Edge cases (same point, antipodal points)
-- [ ] **COMMIT:** "test(api): add haversine distance calculation tests"
-
-### 6.3 Unit Tests for Pricing
-
-- [ ] Create `apps/api/src/domain/pricing/__tests__/discount.test.ts`
-- [ ] Test all discount tiers:
-  - 1-24 units: 0% discount
-  - 25-49 units: 5% discount
-  - 50-99 units: 10% discount
-  - 100-249 units: 15% discount
-  - 250+ units: 20% discount
-- [ ] Test boundary conditions
-- [ ] **COMMIT:** "test(api): add discount calculation tests"
-
-### 6.4 Unit Tests for Shipping
-
-- [ ] Create `apps/api/src/domain/pricing/__tests__/shipping.test.ts`
-- [ ] Test shipping cost formula
-- [ ] Test 15% validity rule
-- [ ] **COMMIT:** "test(api): add shipping cost calculation tests"
-
-### 6.5 Integration Tests for Order Service
-
-- [ ] Create `apps/api/src/domain/orders/__tests__/order.service.test.ts`
-- [ ] Setup test database with seeded data
-- [ ] Test order verification flow
-- [ ] Test order submission flow
-- [ ] Test insufficient stock handling
-- [ ] Test invalid shipping cost rejection
-- [ ] **COMMIT:** "test(api): add order service integration tests"
 
 ---
 
@@ -406,7 +323,6 @@ This document outlines the step-by-step implementation plan for building a produ
   - `@apollo/client` - GraphQL client
   - `graphql` - GraphQL core
   - `react-leaflet`, `leaflet` - Map
-  - `@tanstack/react-query` (optional)
 - [ ] **COMMIT:** "chore(web): initialize vite react project"
 
 ### 7.2 Setup shadcn/ui
@@ -512,7 +428,7 @@ This document outlines the step-by-step implementation plan for building a produ
 
 ### 8.1 Create Unified Start Command
 
-- [ ] Create root `package.json` scripts:
+- [ ] Update root `package.json` scripts:
   - `dev` - Start both API and Web concurrently
   - `setup` - Install deps, run migrations, seed DB
   - `docker:up` - Start PostgreSQL
@@ -536,15 +452,15 @@ This document outlines the step-by-step implementation plan for building a produ
 - [ ] Include development instructions
 - [ ] **COMMIT:** "docs: add comprehensive readme"
 
-### 8.4 Create Architecture Decision Records
+### 8.4 Finalize Architecture Decision Records
 
-- [ ] ADR-001: GraphQL over REST
-- [ ] ADR-002: Prisma ORM Selection
-- [ ] ADR-003: Greedy Algorithm for Warehouse Selection
-- [ ] ADR-004: Decimal.js for Money Calculations
-- [ ] ADR-005: Pessimistic Locking for Stock Updates
-- [ ] ADR-006: pnpm Package Manager
-- [ ] **COMMIT:** "docs: add architecture decision records"
+- [x] ADR-001: GraphQL over REST
+- [x] ADR-002: Prisma ORM Selection
+- [x] ADR-003: Greedy Algorithm for Warehouse Selection
+- [x] ADR-004: Decimal.js for Money Calculations
+- [x] ADR-005: Pessimistic Locking for Stock Updates
+- [x] ADR-006: pnpm Package Manager
+- [ ] **COMMIT:** "docs: finalize architecture decision records"
 
 ### 8.5 Setup GitHub Actions (Bonus)
 
@@ -596,17 +512,17 @@ This document outlines the step-by-step implementation plan for building a produ
 
 ## Time Breakdown Estimate
 
-| Phase                   | Estimated Time |
-| ----------------------- | -------------- |
-| Phase 1: Infrastructure | 30 min         |
-| Phase 2: Database       | 30 min         |
-| Phase 3: Domain Logic   | 60 min         |
-| Phase 4: GraphQL API    | 45 min         |
-| Phase 5: Server Setup   | 15 min         |
-| Phase 6: Testing        | 45 min         |
-| Phase 7: Frontend       | 90 min         |
-| Phase 8: DevOps & Docs  | 30 min         |
-| **Total**               | **~5.5 hours** |
+| Phase                     | Estimated Time |
+| ------------------------- | -------------- |
+| Phase 1: Infrastructure   | 30 min ✅      |
+| Phase 2: Database         | 30 min ✅      |
+| Phase 3: Server Setup     | 20 min         |
+| Phase 4: Testing Setup    | 15 min         |
+| Phase 5: Domain Logic     | 75 min         |
+| Phase 6: GraphQL API      | 45 min         |
+| Phase 7: Frontend         | 90 min         |
+| Phase 8: DevOps & Docs    | 30 min         |
+| **Total**                 | **~5.5 hours** |
 
 ---
 

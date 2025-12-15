@@ -37,7 +37,7 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 - [x] Run `pnpm exec prisma init`
 - [x] Configure `.env` and `prisma.config.ts` (Prisma 7)
-- [x] **COMMIT:** `feat(api): add prisma 7 database layer with seed data`
+- [x] **COMMIT:** `feat(api): add prisma 7 database layer with seed data` _(b97937e)_
 
 ### 2.2 Database Schema ✅
 
@@ -65,153 +65,135 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
-## Phase 3: Core Domain Logic
+## Phase 3: Server & Entry Point
+
+> Start the server early for immediate feedback during development.
 
 ### 3.1 Project Structure
 
-- [ ] Create folder structure (lib/, domain/, graphql/)
+- [ ] Create folder structure (src/lib/, src/domain/, src/graphql/)
 - [ ] **COMMIT:** `chore(api): setup project folder structure`
 
-### 3.2 Haversine Distance
+### 3.2 Prisma Client Singleton
 
-- [ ] Create `lib/haversine.ts`
-- [ ] Implement `calculateDistanceKm()` with Decimal.js
-- [ ] **COMMIT:** `feat(api): implement haversine distance calculation`
-
-### 3.3 Discount Logic
-
-- [ ] Create `domain/pricing/discount.ts`
-- [ ] Implement volume discount tiers
-- [ ] **COMMIT:** `feat(api): implement volume discount calculation`
-
-### 3.4 Shipping Cost
-
-- [ ] Create `domain/pricing/shipping.ts`
-- [ ] Implement shipping cost formula
-- [ ] Implement 15% validity check
-- [ ] **COMMIT:** `feat(api): implement shipping cost calculation`
-
-### 3.5 Warehouse Optimizer
-
-- [ ] Create `domain/logistics/warehouse-optimizer.ts`
-- [ ] Implement greedy allocation algorithm
-- [ ] Handle insufficient stock
-- [ ] **COMMIT:** `feat(api): implement greedy warehouse optimizer`
-
-### 3.6 Order Service
-
-- [ ] Create `domain/orders/order.service.ts`
-- [ ] Implement `verifyOrder()` - quote without DB write
-- [ ] Implement `submitOrder()` - with transaction & locking
-- [ ] **COMMIT:** `feat(api): implement order service`
-
-### 3.7 Prisma Client
-
-- [ ] Create `lib/prisma.ts` singleton
+- [ ] Create `lib/prisma.ts` with pg adapter
 - [ ] **COMMIT:** `chore(api): add prisma client singleton`
 
----
-
-## Phase 4: GraphQL API
-
-### 4.1 Pothos Setup
-
-- [ ] Install `@pothos/plugin-prisma`
-- [ ] Create `graphql/builder.ts`
-- [ ] **COMMIT:** `chore(api): setup pothos graphql builder`
-
-### 4.2 GraphQL Types
-
-- [ ] Create Product type
-- [ ] Create Warehouse type
-- [ ] Create Order type
-- [ ] Create Quote type
-- [ ] Create Shipment type
-- [ ] **COMMIT:** `feat(api): add graphql type definitions`
-
-### 4.3 Queries
-
-- [ ] `products`, `product(id)`
-- [ ] `warehouses`
-- [ ] `orders`, `order(id)`
-- [ ] **COMMIT:** `feat(api): add graphql queries`
-
-### 4.4 Mutations
-
-- [ ] `verifyOrder(quantity, lat, long)`
-- [ ] `submitOrder(quantity, lat, long)`
-- [ ] **COMMIT:** `feat(api): add graphql mutations`
-
-### 4.5 Server Integration
-
-- [ ] Create `graphql/yoga.ts`
-- [ ] Integrate with Fastify
-- [ ] Enable GraphiQL
-- [ ] **COMMIT:** `feat(api): integrate graphql-yoga with fastify`
-
-### 4.6 Schema Generation
-
-- [ ] Add script to generate `schema.graphql`
-- [ ] **COMMIT:** `chore(api): add graphql schema generation`
-
----
-
-## Phase 5: Server & Entry Point
-
-### 5.1 Fastify Server
+### 3.3 Fastify Server
 
 - [ ] Create `server.ts`
 - [ ] Configure logger, CORS, health check
 - [ ] Add graceful shutdown
 - [ ] **COMMIT:** `feat(api): setup fastify server`
 
-### 5.2 Entry Point
+### 3.4 Entry Point
 
 - [ ] Create `index.ts`
 - [ ] **COMMIT:** `feat(api): add server entry point`
 
-### 5.3 Dev Scripts
+---
 
-- [ ] Add `dev`, `build`, `start` scripts
-- [ ] Add `db:*` scripts
-- [ ] **COMMIT:** `chore(api): add development scripts`
+## Phase 4: Testing Setup
+
+> Setup testing infrastructure before writing domain logic.
+
+### 4.1 Vitest Setup
+
+- [ ] Create `vitest.config.ts`
+- [ ] Configure test environment
+- [ ] Add test helpers
+- [ ] **COMMIT:** `chore(api): setup vitest testing framework`
+
+### 4.2 Test Helpers
+
+- [ ] Create test utilities
+- [ ] Add mock factories
+- [ ] **COMMIT:** `chore(api): add test helpers`
 
 ---
 
-## Phase 6: Testing
+## Phase 5: Core Domain Logic
 
-### 6.1 Vitest Setup
+> Each feature includes tests alongside implementation.
 
-- [ ] Create `vitest.config.ts`
-- [ ] Add test helpers
-- [ ] **COMMIT:** `chore(api): setup vitest`
+### 5.1 Haversine Distance
 
-### 6.2 Haversine Tests
+- [ ] Create `lib/haversine.ts`
+- [ ] Implement `calculateDistanceKm()` with Decimal.js
+- [ ] **TEST:** Add haversine tests (LA→NY, Paris→HK, edge cases)
+- [ ] **COMMIT:** `feat(api): implement haversine distance with tests`
 
-- [ ] Test known distances (LA→NY, Paris→HK)
-- [ ] Test edge cases
-- [ ] **COMMIT:** `test(api): add haversine tests`
+### 5.2 Discount Logic
 
-### 6.3 Pricing Tests
+- [ ] Create `domain/pricing/discount.ts`
+- [ ] Implement volume discount tiers (5%, 10%, 15%, 20%)
+- [ ] **TEST:** Add discount tests (all tiers, boundaries)
+- [ ] **COMMIT:** `feat(api): implement volume discount with tests`
 
-- [ ] Test all discount tiers
-- [ ] Test boundary conditions
-- [ ] **COMMIT:** `test(api): add discount tests`
+### 5.3 Shipping Cost
 
-### 6.4 Shipping Tests
+- [ ] Create `domain/pricing/shipping.ts`
+- [ ] Implement shipping cost formula
+- [ ] Implement 15% validity check
+- [ ] **TEST:** Add shipping tests (formula, 15% rule)
+- [ ] **COMMIT:** `feat(api): implement shipping cost with tests`
 
-- [ ] Test cost formula
-- [ ] Test 15% rule
-- [ ] **COMMIT:** `test(api): add shipping tests`
+### 5.4 Warehouse Optimizer
 
-### 6.5 Integration Tests
+- [ ] Create `domain/logistics/warehouse-optimizer.ts`
+- [ ] Implement greedy allocation algorithm
+- [ ] Handle insufficient stock
+- [ ] **TEST:** Add optimizer tests (single, multi, insufficient)
+- [ ] **COMMIT:** `feat(api): implement warehouse optimizer with tests`
 
-- [ ] Setup test database
-- [ ] Test order verification
-- [ ] Test order submission
-- [ ] Test insufficient stock
-- [ ] Test invalid shipping
-- [ ] **COMMIT:** `test(api): add order service integration tests`
+### 5.5 Order Service
+
+- [ ] Create `domain/orders/order.service.ts`
+- [ ] Implement `verifyOrder()` - quote without DB write
+- [ ] Implement `submitOrder()` - with transaction & locking
+- [ ] **TEST:** Add order service tests (verify, submit, errors)
+- [ ] **COMMIT:** `feat(api): implement order service with tests`
+
+---
+
+## Phase 6: GraphQL API
+
+### 6.1 Pothos Setup
+
+- [ ] Create `graphql/builder.ts`
+- [ ] Configure Decimal scalar
+- [ ] **COMMIT:** `chore(api): setup pothos graphql builder`
+
+### 6.2 GraphQL Types
+
+- [ ] Create Product, Warehouse, Order types
+- [ ] Create Quote, Shipment types
+- [ ] **COMMIT:** `feat(api): add graphql type definitions`
+
+### 6.3 Queries
+
+- [ ] `products`, `product(id)`
+- [ ] `warehouses`
+- [ ] `orders`, `order(id)`
+- [ ] **COMMIT:** `feat(api): add graphql queries`
+
+### 6.4 Mutations
+
+- [ ] `verifyOrder(quantity, lat, long)`
+- [ ] `submitOrder(quantity, lat, long)`
+- [ ] **COMMIT:** `feat(api): add graphql mutations`
+
+### 6.5 Server Integration
+
+- [ ] Create `graphql/yoga.ts`
+- [ ] Integrate with Fastify
+- [ ] Enable GraphiQL
+- [ ] **COMMIT:** `feat(api): integrate graphql-yoga with fastify`
+
+### 6.6 Schema Generation
+
+- [ ] Add script to generate `schema.graphql`
+- [ ] **COMMIT:** `chore(api): add graphql schema generation`
 
 ---
 
@@ -317,13 +299,13 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ### 8.4 ADRs
 
-- [ ] ADR-001: GraphQL
-- [ ] ADR-002: Prisma
-- [ ] ADR-003: Greedy Algorithm
-- [ ] ADR-004: Decimal.js
-- [ ] ADR-005: Pessimistic Locking
-- [ ] ADR-006: pnpm Package Manager
-- [ ] **COMMIT:** `docs: add architecture decision records`
+- [x] ADR-001: GraphQL
+- [x] ADR-002: Prisma
+- [x] ADR-003: Greedy Algorithm
+- [x] ADR-004: Decimal.js
+- [x] ADR-005: Pessimistic Locking
+- [x] ADR-006: pnpm Package Manager
+- [ ] **COMMIT:** `docs: finalize architecture decision records`
 
 ### 8.5 CI/CD (Bonus)
 
@@ -370,12 +352,12 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 | ----------------- | -------------- | -------- |
 | 1. Infrastructure | ✅ Complete    | 3/3      |
 | 2. Database       | ✅ Complete    | 1/1      |
-| 3. Domain Logic   | ⬜ Not Started | 0/7      |
-| 4. GraphQL API    | ⬜ Not Started | 0/6      |
-| 5. Server         | ⬜ Not Started | 0/3      |
-| 6. Testing        | ⬜ Not Started | 0/5      |
+| 3. Server Setup   | ⬜ Not Started | 0/4      |
+| 4. Testing Setup  | ⬜ Not Started | 0/2      |
+| 5. Domain Logic   | ⬜ Not Started | 0/5      |
+| 6. GraphQL API    | ⬜ Not Started | 0/6      |
 | 7. Frontend       | ⬜ Not Started | 0/12     |
 | 8. DevOps         | ⬜ Not Started | 0/5      |
-| **Total**         | **10%**        | **4/42** |
+| **Total**         | **10%**        | **4/38** |
 
 Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete
