@@ -27,7 +27,8 @@ export function createGraphQLServer(): YogaServerInstance<
           title: 'ScreenCloud OMS - GraphQL API',
           defaultQuery: `# Welcome to ScreenCloud OMS GraphQL API!
 #
-# Try these queries:
+# All monetary values are in CENTS. Frontend should format for display.
+# Example: 15000 cents = $150.00
 
 # Get all warehouses
 query GetWarehouses {
@@ -44,7 +45,7 @@ query GetWarehouses {
 # Verify an order (returns quote without creating order)
 mutation VerifyOrder {
   verifyOrder(input: {
-    quantity: 10
+    quantity: 50
     latitude: 51.5074
     longitude: -0.1278
   }) {
@@ -53,25 +54,27 @@ mutation VerifyOrder {
     quantity
     product {
       name
-      unitPriceFormatted
+      unitPriceCents
     }
     discount {
       discountPercentage
       tierName
-      discountFormatted
+      originalAmountCents
+      discountAmountCents
+      discountedAmountCents
     }
     shipments {
       warehouseName
       quantity
       distanceKm
-      shippingCostFormatted
+      shippingCostCents
     }
-    totalShippingFormatted
+    totalShippingCostCents
     shippingValidity {
       isValid
       shippingPercentage
     }
-    grandTotalFormatted
+    grandTotalCents
   }
 }
 
@@ -85,15 +88,15 @@ mutation SubmitOrder {
     id
     orderNumber
     quantity
-    subtotalFormatted
-    discountFormatted
-    shippingFormatted
-    totalFormatted
+    subtotalCents
+    discountCents
+    shippingCents
+    totalCents
     status
     shipments {
       warehouseName
       quantity
-      shippingFormatted
+      shippingCents
     }
     createdAt
   }
@@ -104,7 +107,7 @@ query GetOrders {
   orders(limit: 10) {
     orderNumber
     quantity
-    totalFormatted
+    totalCents
     status
     createdAt
   }

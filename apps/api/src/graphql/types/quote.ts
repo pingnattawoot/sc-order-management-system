@@ -2,6 +2,7 @@
  * Quote GraphQL Types
  *
  * Types for order verification/quoting.
+ * Note: All monetary values are in cents.
  */
 
 import { builder } from '../builder.js';
@@ -35,18 +36,6 @@ builder.objectType(DiscountResultType, {
     }),
     tierName: t.exposeString('tierName', {
       description: 'Name of the discount tier applied',
-    }),
-    originalFormatted: t.string({
-      description: 'Original amount formatted as currency',
-      resolve: (d) => `$${(d.originalAmountCents / 100).toFixed(2)}`,
-    }),
-    discountFormatted: t.string({
-      description: 'Discount amount formatted as currency',
-      resolve: (d) => `$${(d.discountAmountCents / 100).toFixed(2)}`,
-    }),
-    discountedFormatted: t.string({
-      description: 'Discounted amount formatted as currency',
-      resolve: (d) => `$${(d.discountedAmountCents / 100).toFixed(2)}`,
     }),
   }),
 });
@@ -82,14 +71,6 @@ builder.objectType(ShippingValidityType, {
       description: 'Maximum allowed percentage (15)',
       resolve: (s) => s.maxPercentage,
     }),
-    actualShippingFormatted: t.string({
-      description: 'Actual shipping formatted as currency',
-      resolve: (s) => `$${(s.actualShippingCents / 100).toFixed(2)}`,
-    }),
-    maxAllowedFormatted: t.string({
-      description: 'Maximum allowed shipping formatted as currency',
-      resolve: (s) => `$${(s.maxAllowedShippingCents / 100).toFixed(2)}`,
-    }),
   }),
 });
 
@@ -110,10 +91,6 @@ builder.objectType(QuoteProductType, {
     name: t.exposeString('name', { description: 'Product name' }),
     unitPriceCents: t.exposeInt('unitPriceCents', {
       description: 'Unit price in cents',
-    }),
-    unitPriceFormatted: t.string({
-      description: 'Unit price formatted as currency',
-      resolve: (p) => `$${(p.unitPriceCents / 100).toFixed(2)}`,
     }),
     weightGrams: t.exposeInt('weightGrams', {
       description: 'Weight in grams',
@@ -200,10 +177,6 @@ builder.objectType(OrderQuoteType, {
     totalShippingCostCents: t.exposeInt('totalShippingCostCents', {
       description: 'Total shipping cost in cents',
     }),
-    totalShippingFormatted: t.string({
-      description: 'Total shipping formatted as currency',
-      resolve: (q) => `$${(q.totalShippingCostCents / 100).toFixed(2)}`,
-    }),
     shippingValidity: t.field({
       type: ShippingValidityType,
       description: 'Shipping cost validity (15% rule)',
@@ -212,18 +185,9 @@ builder.objectType(OrderQuoteType, {
     grandTotalCents: t.exposeInt('grandTotalCents', {
       description: 'Grand total in cents (discounted subtotal + shipping)',
     }),
-    grandTotalFormatted: t.string({
-      description: 'Grand total formatted as currency',
-      resolve: (q) => `$${(q.grandTotalCents / 100).toFixed(2)}`,
-    }),
     subtotalCents: t.int({
-      description: 'Subtotal before discount in cents',
+      description: 'Subtotal before discount in cents (alias for discount.originalAmountCents)',
       resolve: (q) => q.discount.originalAmountCents,
-    }),
-    subtotalFormatted: t.string({
-      description: 'Subtotal formatted as currency',
-      resolve: (q) => `$${(q.discount.originalAmountCents / 100).toFixed(2)}`,
     }),
   }),
 });
-

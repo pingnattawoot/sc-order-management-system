@@ -10,9 +10,44 @@
 import { nanoid } from 'nanoid';
 import { prisma } from '../../lib/prisma.js';
 import { WarehouseOptimizer, WarehouseData } from '../logistics/warehouse-optimizer.js';
-import { calculateDiscount, DiscountResult } from '../pricing/discount.js';
+import {
+  calculateDiscount,
+  DiscountResult as DomainDiscountResult,
+  getDiscountTier,
+} from '../pricing/discount.js';
 import { checkShippingValidity, ShippingValidityResult } from '../pricing/shipping.js';
 import type { Order, OrderShipment, OrderStatus, Product, Warehouse } from '../../generated/prisma/client.js';
+
+/**
+ * Discount result formatted for GraphQL response
+ */
+export interface DiscountResult {
+  originalAmountCents: number;
+  discountAmountCents: number;
+  discountedAmountCents: number;
+  discountPercentage: number;
+  tierName: string;
+}
+
+/**
+ * Map domain discount result to GraphQL format
+ */
+function mapDiscountResult(domain: DomainDiscountResult, quantity: number): DiscountResult {
+  const tier = getDiscountTier(quantity);
+  const tierName = tier
+    ? tier.percentage === 0
+      ? 'No Discount'
+      : `${tier.percentage}% Volume Discount`
+    : 'No Discount';
+
+  return {
+    originalAmountCents: domain.originalAmountCents,
+    discountAmountCents: domain.discountAmountCents,
+    discountedAmountCents: domain.finalAmountCents,
+    discountPercentage: domain.discountPercentage,
+    tierName,
+  };
+}
 
 /**
  * Shipment details in a quote/order
@@ -45,7 +80,7 @@ export interface OrderQuote {
     unitPriceCents: number;
     weightGrams: number;
   };
-  /** Discount calculation */
+  /** Discount calculation (mapped to GraphQL format) */
   discount: DiscountResult;
   /** Shipment allocations */
   shipments: ShipmentDetail[];
@@ -215,16 +250,17 @@ export class OrderService {
     }
 
     // Calculate discount
-    const discount = calculateDiscount(quantity, product.unitPriceCents);
+    const domainDiscount = calculateDiscount(quantity, product.unitPriceCents);
+    const discount = mapDiscountResult(domainDiscount, quantity);
 
-    // Check shipping validity
+    // Check shipping validity (use discountedAmountCents for the 15% rule)
     const shippingValidity = checkShippingValidity(
       optimization.totalShippingCostCents,
-      discount.finalAmountCents
+      discount.discountedAmountCents
     );
 
     // Calculate grand total
-    const grandTotalCents = discount.finalAmountCents + optimization.totalShippingCostCents;
+    const grandTotalCents = discount.discountedAmountCents + optimization.totalShippingCostCents;
 
     // Build shipment details
     const shipments: ShipmentDetail[] = optimization.shipments.map((s) => ({
@@ -286,9 +322,10 @@ export class OrderService {
           },
       discount: {
         originalAmountCents: 0,
-        discountPercentage: 0,
         discountAmountCents: 0,
-        finalAmountCents: 0,
+        discountedAmountCents: 0,
+        discountPercentage: 0,
+        tierName: 'No Discount',
       },
       shipments: [],
       totalShippingCostCents: 0,

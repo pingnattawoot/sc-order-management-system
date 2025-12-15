@@ -71,30 +71,14 @@ builder.objectType(OrderType, {
     subtotalCents: t.exposeInt('subtotalCents', {
       description: 'Subtotal before discount in cents',
     }),
-    subtotalFormatted: t.string({
-      description: 'Subtotal formatted as currency',
-      resolve: (o) => `$${(o.subtotalCents / 100).toFixed(2)}`,
-    }),
     discountCents: t.exposeInt('discountCents', {
       description: 'Discount amount in cents',
-    }),
-    discountFormatted: t.string({
-      description: 'Discount formatted as currency',
-      resolve: (o) => `$${(o.discountCents / 100).toFixed(2)}`,
     }),
     shippingCents: t.exposeInt('shippingCents', {
       description: 'Total shipping cost in cents',
     }),
-    shippingFormatted: t.string({
-      description: 'Shipping formatted as currency',
-      resolve: (o) => `$${(o.shippingCents / 100).toFixed(2)}`,
-    }),
     totalCents: t.exposeInt('totalCents', {
       description: 'Grand total in cents',
-    }),
-    totalFormatted: t.string({
-      description: 'Total formatted as currency',
-      resolve: (o) => `$${(o.totalCents / 100).toFixed(2)}`,
     }),
     status: t.field({
       type: OrderStatusEnum,

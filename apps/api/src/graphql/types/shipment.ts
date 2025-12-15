@@ -34,10 +34,6 @@ builder.objectType(ShipmentDetailType, {
     shippingCostCents: t.exposeInt('shippingCostCents', {
       description: 'Shipping cost in cents for this shipment',
     }),
-    shippingCostFormatted: t.string({
-      description: 'Shipping cost formatted as currency',
-      resolve: (s) => `$${(s.shippingCostCents / 100).toFixed(2)}`,
-    }),
   }),
 });
 
@@ -80,10 +76,6 @@ builder.objectType(OrderShipmentType, {
     }),
     shippingCents: t.exposeInt('shippingCents', {
       description: 'Shipping cost in cents',
-    }),
-    shippingFormatted: t.string({
-      description: 'Shipping cost formatted as currency',
-      resolve: (s) => `$${(s.shippingCents / 100).toFixed(2)}`,
     }),
     createdAt: t.field({
       type: 'DateTime',

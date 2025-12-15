@@ -29,18 +29,10 @@ builder.objectType(ProductType, {
       nullable: true,
     }),
     priceInCents: t.exposeInt('priceInCents', {
-      description: 'Price in cents (e.g., 15000 = $150.00)',
-    }),
-    priceFormatted: t.string({
-      description: 'Price formatted as currency string',
-      resolve: (product) => `$${(product.priceInCents / 100).toFixed(2)}`,
+      description: 'Price in cents (e.g., 15000 = $150.00).',
     }),
     weightGrams: t.exposeInt('weightGrams', {
       description: 'Weight in grams',
-    }),
-    weightKg: t.float({
-      description: 'Weight in kilograms',
-      resolve: (product) => product.weightGrams / 1000,
     }),
     createdAt: t.field({
       type: 'DateTime',
