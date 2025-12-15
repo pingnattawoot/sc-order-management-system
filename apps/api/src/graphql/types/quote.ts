@@ -1,0 +1,229 @@
+/**
+ * Quote GraphQL Types
+ *
+ * Types for order verification/quoting.
+ */
+
+import { builder } from '../builder.js';
+import { ShipmentDetailType } from './shipment.js';
+
+/**
+ * Discount result type
+ */
+export const DiscountResultType = builder.objectRef<{
+  originalAmountCents: number;
+  discountAmountCents: number;
+  discountedAmountCents: number;
+  discountPercentage: number;
+  tierName: string;
+}>('DiscountResult');
+
+builder.objectType(DiscountResultType, {
+  description: 'Volume discount calculation result',
+  fields: (t) => ({
+    originalAmountCents: t.exposeInt('originalAmountCents', {
+      description: 'Original amount before discount in cents',
+    }),
+    discountAmountCents: t.exposeInt('discountAmountCents', {
+      description: 'Discount amount in cents',
+    }),
+    discountedAmountCents: t.exposeInt('discountedAmountCents', {
+      description: 'Amount after discount in cents',
+    }),
+    discountPercentage: t.exposeInt('discountPercentage', {
+      description: 'Discount percentage applied (0, 5, 10, 15, or 20)',
+    }),
+    tierName: t.exposeString('tierName', {
+      description: 'Name of the discount tier applied',
+    }),
+    originalFormatted: t.string({
+      description: 'Original amount formatted as currency',
+      resolve: (d) => `$${(d.originalAmountCents / 100).toFixed(2)}`,
+    }),
+    discountFormatted: t.string({
+      description: 'Discount amount formatted as currency',
+      resolve: (d) => `$${(d.discountAmountCents / 100).toFixed(2)}`,
+    }),
+    discountedFormatted: t.string({
+      description: 'Discounted amount formatted as currency',
+      resolve: (d) => `$${(d.discountedAmountCents / 100).toFixed(2)}`,
+    }),
+  }),
+});
+
+/**
+ * Shipping validity result type
+ */
+export const ShippingValidityType = builder.objectRef<{
+  isValid: boolean;
+  actualShippingCents: number;
+  maxAllowedShippingCents: number;
+  shippingPercentage: number;
+  maxPercentage: number;
+}>('ShippingValidity');
+
+builder.objectType(ShippingValidityType, {
+  description: 'Shipping cost validity check result (15% rule)',
+  fields: (t) => ({
+    isValid: t.exposeBoolean('isValid', {
+      description: 'Whether shipping cost is within 15% of discounted subtotal',
+    }),
+    actualShippingCents: t.exposeInt('actualShippingCents', {
+      description: 'Actual shipping cost in cents',
+    }),
+    maxAllowedShippingCents: t.exposeInt('maxAllowedShippingCents', {
+      description: 'Maximum allowed shipping (15% of discounted subtotal)',
+    }),
+    shippingPercentage: t.float({
+      description: 'Actual shipping as percentage of discounted subtotal',
+      resolve: (s) => s.shippingPercentage,
+    }),
+    maxPercentage: t.float({
+      description: 'Maximum allowed percentage (15)',
+      resolve: (s) => s.maxPercentage,
+    }),
+    actualShippingFormatted: t.string({
+      description: 'Actual shipping formatted as currency',
+      resolve: (s) => `$${(s.actualShippingCents / 100).toFixed(2)}`,
+    }),
+    maxAllowedFormatted: t.string({
+      description: 'Maximum allowed shipping formatted as currency',
+      resolve: (s) => `$${(s.maxAllowedShippingCents / 100).toFixed(2)}`,
+    }),
+  }),
+});
+
+/**
+ * Product summary in quote
+ */
+export const QuoteProductType = builder.objectRef<{
+  id: string;
+  name: string;
+  unitPriceCents: number;
+  weightGrams: number;
+}>('QuoteProduct');
+
+builder.objectType(QuoteProductType, {
+  description: 'Product information in a quote',
+  fields: (t) => ({
+    id: t.exposeID('id', { description: 'Product ID' }),
+    name: t.exposeString('name', { description: 'Product name' }),
+    unitPriceCents: t.exposeInt('unitPriceCents', {
+      description: 'Unit price in cents',
+    }),
+    unitPriceFormatted: t.string({
+      description: 'Unit price formatted as currency',
+      resolve: (p) => `$${(p.unitPriceCents / 100).toFixed(2)}`,
+    }),
+    weightGrams: t.exposeInt('weightGrams', {
+      description: 'Weight in grams',
+    }),
+  }),
+});
+
+/**
+ * Order quote type
+ */
+export const OrderQuoteType = builder.objectRef<{
+  isValid: boolean;
+  errorMessage: string | null;
+  quantity: number;
+  customerLatitude: number;
+  customerLongitude: number;
+  product: {
+    id: string;
+    name: string;
+    unitPriceCents: number;
+    weightGrams: number;
+  };
+  discount: {
+    originalAmountCents: number;
+    discountAmountCents: number;
+    discountedAmountCents: number;
+    discountPercentage: number;
+    tierName: string;
+  };
+  shipments: Array<{
+    warehouseId: string;
+    warehouseName: string;
+    quantity: number;
+    distanceKm: number;
+    shippingCostCents: number;
+  }>;
+  totalShippingCostCents: number;
+  shippingValidity: {
+    isValid: boolean;
+    actualShippingCents: number;
+    maxAllowedShippingCents: number;
+    shippingPercentage: number;
+    maxPercentage: number;
+  };
+  grandTotalCents: number;
+}>('OrderQuote');
+
+builder.objectType(OrderQuoteType, {
+  description: 'Order verification/quote result',
+  fields: (t) => ({
+    isValid: t.exposeBoolean('isValid', {
+      description: 'Whether the order can be fulfilled',
+    }),
+    errorMessage: t.exposeString('errorMessage', {
+      description: 'Error message if not valid',
+      nullable: true,
+    }),
+    quantity: t.exposeInt('quantity', {
+      description: 'Requested quantity',
+    }),
+    customerLatitude: t.float({
+      description: 'Customer latitude',
+      resolve: (q) => q.customerLatitude,
+    }),
+    customerLongitude: t.float({
+      description: 'Customer longitude',
+      resolve: (q) => q.customerLongitude,
+    }),
+    product: t.field({
+      type: QuoteProductType,
+      description: 'Product being ordered',
+      resolve: (q) => q.product,
+    }),
+    discount: t.field({
+      type: DiscountResultType,
+      description: 'Discount calculation',
+      resolve: (q) => q.discount,
+    }),
+    shipments: t.field({
+      type: [ShipmentDetailType],
+      description: 'Shipment allocations from warehouses',
+      resolve: (q) => q.shipments,
+    }),
+    totalShippingCostCents: t.exposeInt('totalShippingCostCents', {
+      description: 'Total shipping cost in cents',
+    }),
+    totalShippingFormatted: t.string({
+      description: 'Total shipping formatted as currency',
+      resolve: (q) => `$${(q.totalShippingCostCents / 100).toFixed(2)}`,
+    }),
+    shippingValidity: t.field({
+      type: ShippingValidityType,
+      description: 'Shipping cost validity (15% rule)',
+      resolve: (q) => q.shippingValidity,
+    }),
+    grandTotalCents: t.exposeInt('grandTotalCents', {
+      description: 'Grand total in cents (discounted subtotal + shipping)',
+    }),
+    grandTotalFormatted: t.string({
+      description: 'Grand total formatted as currency',
+      resolve: (q) => `$${(q.grandTotalCents / 100).toFixed(2)}`,
+    }),
+    subtotalCents: t.int({
+      description: 'Subtotal before discount in cents',
+      resolve: (q) => q.discount.originalAmountCents,
+    }),
+    subtotalFormatted: t.string({
+      description: 'Subtotal formatted as currency',
+      resolve: (q) => `$${(q.discount.originalAmountCents / 100).toFixed(2)}`,
+    }),
+  }),
+});
+

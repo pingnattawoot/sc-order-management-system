@@ -16,14 +16,15 @@ async function main() {
       host: config.server.host,
     });
 
+    const port = config.server.port;
     console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║  ScreenCloud Order Management System                       ║
 ╠════════════════════════════════════════════════════════════╣
-║  🚀 Server running at http://localhost:${config.server.port.toString().padEnd(5)}              ║
-║  📊 Health check: http://localhost:${config.server.port}/health             ║
-║  🔮 GraphQL:      http://localhost:${config.server.port}/graphql (coming)   ║
-╚════════════════════════════════════════════════════════════╝
+║  🚀 Server running at http://localhost:${port.toString().padEnd(5)}              ║
+║  📊 Health check: http://localhost:${port}/health             ║
+║  🔮 GraphQL API:  http://localhost:${port}/graphql            ║
+${config.env.isDev ? `║  📝 GraphiQL:    http://localhost:${port}/graphql            ║\n` : ''}╚════════════════════════════════════════════════════════════╝
     `);
   } catch (err) {
     console.error('Failed to start server:', err);

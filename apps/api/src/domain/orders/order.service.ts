@@ -405,10 +405,20 @@ export class OrderService {
   /**
    * Get an order by ID
    */
-  async getOrder(id: string): Promise<(Order & { shipments: OrderShipment[] }) | null> {
+  async getOrder(
+    id: string
+  ): Promise<(Order & { shipments: (OrderShipment & { warehouse: { id: string; name: string } })[] }) | null> {
     return prisma.order.findUnique({
       where: { id },
-      include: { shipments: true },
+      include: {
+        shipments: {
+          include: {
+            warehouse: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -417,19 +427,35 @@ export class OrderService {
    */
   async getOrderByNumber(
     orderNumber: string
-  ): Promise<(Order & { shipments: OrderShipment[] }) | null> {
+  ): Promise<(Order & { shipments: (OrderShipment & { warehouse: { id: string; name: string } })[] }) | null> {
     return prisma.order.findUnique({
       where: { orderNumber },
-      include: { shipments: true },
+      include: {
+        shipments: {
+          include: {
+            warehouse: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
     });
   }
 
   /**
    * List all orders
    */
-  async listOrders(): Promise<(Order & { shipments: OrderShipment[] })[]> {
+  async listOrders(): Promise<(Order & { shipments: (OrderShipment & { warehouse: { id: string; name: string } })[] })[]> {
     return prisma.order.findMany({
-      include: { shipments: true },
+      include: {
+        shipments: {
+          include: {
+            warehouse: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

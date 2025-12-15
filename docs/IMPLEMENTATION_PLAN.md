@@ -229,60 +229,67 @@ This document outlines the step-by-step implementation plan for building a produ
 
 ---
 
-## Phase 6: GraphQL API Layer
+## Phase 6: GraphQL API Layer ✅
 
-### 6.1 Setup Pothos Schema Builder
+### 6.1 Setup Pothos Schema Builder ✅
 
-- [ ] Create `apps/api/src/graphql/builder.ts`
-- [ ] Configure Pothos with custom scalars for Decimal
-- [ ] **COMMIT:** "chore(api): setup pothos graphql schema builder"
+- [x] Create `apps/api/src/graphql/builder.ts`
+- [x] Configure Pothos with custom scalars (Decimal, DateTime)
+- [x] Define Context type with requestId for tracing
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.2 Define GraphQL Types
+### 6.2 Define GraphQL Types ✅
 
-- [ ] Create `apps/api/src/graphql/types/`:
-  - `product.ts` - Product type
-  - `warehouse.ts` - Warehouse type
-  - `order.ts` - Order type
-  - `quote.ts` - Quote type (for order verification)
-  - `shipment.ts` - Shipment allocation type
-- [ ] Define custom scalars for Decimal handling
-- [ ] **COMMIT:** "feat(api): add graphql type definitions"
+- [x] Create `apps/api/src/graphql/types/`:
+  - `product.ts` - Product type with formatted price, weight in kg
+  - `warehouse.ts` - Warehouse type with Decimal coordinates
+  - `order.ts` - Order type with OrderStatus enum, formatted fields
+  - `quote.ts` - OrderQuote, DiscountResult, ShippingValidity, QuoteProduct
+  - `shipment.ts` - ShipmentDetail, OrderShipment types
+- [x] All types include formatted currency fields (e.g., `priceFormatted`)
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.3 Implement Queries
+### 6.3 Implement Queries ✅
 
-- [ ] Create `apps/api/src/graphql/resolvers/queries.ts`
-- [ ] Implement queries:
+- [x] Create `apps/api/src/graphql/resolvers/queries.ts`
+- [x] Implement queries:
   - `products` - List all products
   - `product(id)` - Get single product
   - `warehouses` - List all warehouses with current stock
-  - `orders` - List all orders
+  - `warehouse(id)` - Get single warehouse
+  - `totalStock` - Aggregate total stock across warehouses
+  - `orders(limit)` - List all orders (newest first)
   - `order(id)` - Get single order with shipment details
-- [ ] **COMMIT:** "feat(api): add graphql queries"
+  - `orderByNumber(orderNumber)` - Get order by ORD-XXXXX number
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.4 Implement Mutations
+### 6.4 Implement Mutations ✅
 
-- [ ] Create `apps/api/src/graphql/resolvers/mutations.ts`
-- [ ] Implement mutations:
-  - `verifyOrder(quantity, latitude, longitude)` → Quote
-    - Returns: subtotal, discount, shipping, total, isValid, shipments[]
-  - `submitOrder(quantity, latitude, longitude)` → Order
-    - Returns: created order with order number
-- [ ] Add input validation
-- [ ] **COMMIT:** "feat(api): add graphql mutations"
+- [x] Create `apps/api/src/graphql/resolvers/mutations.ts`
+- [x] Create `OrderInput` input type
+- [x] Implement mutations:
+  - `verifyOrder(input: OrderInput!)` → OrderQuote
+    - Returns: isValid, discount, shipments[], shippingValidity, grandTotal
+  - `submitOrder(input: OrderInput!)` → Order
+    - Returns: created order with shipments and warehouse info
+- [x] Add error handling with GraphQL error codes (VERIFICATION_ERROR, INSUFFICIENT_STOCK, etc.)
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.5 Integrate GraphQL with Fastify
+### 6.5 Integrate GraphQL with Fastify ✅
 
-- [ ] Create `apps/api/src/graphql/yoga.ts`
-- [ ] Integrate GraphQL Yoga with Fastify
-- [ ] Setup GraphQL context with Prisma and services
-- [ ] Enable GraphiQL playground in development
-- [ ] **COMMIT:** "feat(api): integrate graphql-yoga with fastify"
+- [x] Create `apps/api/src/graphql/yoga.ts`
+- [x] Integrate GraphQL Yoga with Fastify (GET, POST, OPTIONS)
+- [x] Setup GraphQL context with requestId for tracing
+- [x] Enable GraphiQL playground in development with default queries
+- [x] Mask errors in production
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.6 Generate GraphQL Schema File
+### 6.6 Generate GraphQL Schema File ✅
 
-- [ ] Add script to generate `schema.graphql` file
-- [ ] Configure codegen for type generation (client use)
-- [ ] **COMMIT:** "chore(api): add graphql schema generation"
+- [x] Create `apps/api/scripts/generate-schema.ts`
+- [x] Generated `schema.graphql` (358 lines)
+- [x] Add `graphql:generate` script to package.json
+- [x] **COMMIT:** "feat(api): implement graphql api layer"
 
 ---
 

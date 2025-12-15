@@ -4,13 +4,15 @@
  * Configures and creates the Fastify server instance with:
  * - Logging (pino)
  * - CORS
+ * - GraphQL API (via GraphQL Yoga)
  * - Health check endpoint
  * - Graceful shutdown
  */
 
-import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import Fastify, { FastifyInstance } from 'fastify';
 import { config } from './config/index.js';
+import { createGraphQLServer, GRAPHQL_ENDPOINT } from './graphql/index.js';
 import { checkDatabaseHealth, disconnectPrisma } from './lib/prisma.js';
 
 /**
@@ -64,9 +66,51 @@ export async function buildServer(): Promise<FastifyInstance> {
       version: '1.0.0',
       endpoints: {
         health: '/health',
-        graphql: '/graphql',
+        graphql: GRAPHQL_ENDPOINT,
+        graphiql: config.env.isDev ? GRAPHQL_ENDPOINT : undefined,
       },
     });
+  });
+
+  // GraphQL endpoint (via GraphQL Yoga)
+  const yoga = createGraphQLServer();
+
+  server.route({
+    url: GRAPHQL_ENDPOINT,
+    method: ['GET', 'POST', 'OPTIONS'],
+    handler: async (request, reply) => {
+      // Build a standard Request object from Fastify request
+      const url = `${request.protocol}://${request.hostname}${request.url}`;
+      const headers = new Headers();
+      for (const [key, value] of Object.entries(request.headers)) {
+        if (value) {
+          headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+        }
+      }
+
+      const req = new Request(url, {
+        method: request.method,
+        headers,
+        body:
+          request.method !== 'GET' && request.method !== 'HEAD'
+            ? JSON.stringify(request.body)
+            : undefined,
+      });
+
+      // Handle the request with Yoga
+      const response = await yoga.handle(req, { req: request, reply });
+
+      // Set response headers
+      for (const [key, value] of response.headers.entries()) {
+        reply.header(key, value);
+      }
+
+      reply.status(response.status);
+
+      // Send response body
+      const body = await response.text();
+      return reply.send(body);
+    },
   });
 
   // Graceful shutdown handler
@@ -90,4 +134,3 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   return server;
 }
-

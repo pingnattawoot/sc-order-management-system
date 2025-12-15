@@ -166,44 +166,47 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
-## Phase 6: GraphQL API
+## Phase 6: GraphQL API ✅
 
-### 6.1 Pothos Setup
+### 6.1 Pothos Setup ✅
 
-- [ ] Create `graphql/builder.ts`
-- [ ] Configure Decimal scalar
-- [ ] **COMMIT:** `chore(api): setup pothos graphql builder`
+- [x] Create `graphql/builder.ts`
+- [x] Configure Decimal & DateTime custom scalars
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.2 GraphQL Types
+### 6.2 GraphQL Types ✅
 
-- [ ] Create Product, Warehouse, Order types
-- [ ] Create Quote, Shipment types
-- [ ] **COMMIT:** `feat(api): add graphql type definitions`
+- [x] Create Product, Warehouse, Order types
+- [x] Create Quote, Shipment types with formatted fields
+- [x] Add OrderStatus enum
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.3 Queries
+### 6.3 Queries ✅
 
-- [ ] `products`, `product(id)`
-- [ ] `warehouses`
-- [ ] `orders`, `order(id)`
-- [ ] **COMMIT:** `feat(api): add graphql queries`
+- [x] `products`, `product(id)`
+- [x] `warehouses`, `warehouse(id)`, `totalStock`
+- [x] `orders(limit)`, `order(id)`, `orderByNumber`
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.4 Mutations
+### 6.4 Mutations ✅
 
-- [ ] `verifyOrder(quantity, lat, long)`
-- [ ] `submitOrder(quantity, lat, long)`
-- [ ] **COMMIT:** `feat(api): add graphql mutations`
+- [x] `verifyOrder(input)` - returns quote with full pricing breakdown
+- [x] `submitOrder(input)` - creates order with pessimistic locking
+- [x] OrderInput type with validation
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.5 Server Integration
+### 6.5 Server Integration ✅
 
-- [ ] Create `graphql/yoga.ts`
-- [ ] Integrate with Fastify
-- [ ] Enable GraphiQL
-- [ ] **COMMIT:** `feat(api): integrate graphql-yoga with fastify`
+- [x] Create `graphql/yoga.ts`
+- [x] Integrate with Fastify (GET, POST, OPTIONS)
+- [x] Enable GraphiQL with default queries in development
+- [x] _(consolidated with Phase 6 commit)_
 
-### 6.6 Schema Generation
+### 6.6 Schema Generation ✅
 
-- [ ] Add script to generate `schema.graphql`
-- [ ] **COMMIT:** `chore(api): add graphql schema generation`
+- [x] Add `scripts/generate-schema.ts`
+- [x] Generated `schema.graphql` (358 lines)
+- [x] **COMMIT:** `feat(api): implement graphql api layer`
 
 ---
 
@@ -365,9 +368,9 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 | 3. Server Setup   | ✅ Complete    | 1/1      |
 | 4. Testing Setup  | ✅ Complete    | 1/1      |
 | 5. Domain Logic   | ✅ Complete    | 1/1      |
-| 6. GraphQL API    | ⬜ Not Started | 0/6      |
+| 6. GraphQL API    | ✅ Complete    | 1/1      |
 | 7. Frontend       | ⬜ Not Started | 0/12     |
 | 8. DevOps         | ⬜ Not Started | 0/5      |
-| **Total**         | **23%**        | **7/30** |
+| **Total**         | **33%**        | **8/25** |
 
 Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete

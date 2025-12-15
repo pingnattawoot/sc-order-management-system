@@ -1,0 +1,358 @@
+"""DateTime scalar in ISO 8601 format"""
+scalar DateTime
+
+"""Decimal scalar for precise numeric values (money, distances)"""
+scalar Decimal
+
+"""Volume discount calculation result"""
+type DiscountResult {
+  """Discount amount in cents"""
+  discountAmountCents: Int
+
+  """Discount amount formatted as currency"""
+  discountFormatted: String
+
+  """Discount percentage applied (0, 5, 10, 15, or 20)"""
+  discountPercentage: Int
+
+  """Amount after discount in cents"""
+  discountedAmountCents: Int
+
+  """Discounted amount formatted as currency"""
+  discountedFormatted: String
+
+  """Original amount before discount in cents"""
+  originalAmountCents: Int
+
+  """Original amount formatted as currency"""
+  originalFormatted: String
+
+  """Name of the discount tier applied"""
+  tierName: String
+}
+
+type Mutation {
+  """
+  Submit an order and create it in the database. Updates warehouse stock with pessimistic locking.
+  """
+  submitOrder(input: OrderInput!): Order
+
+  """
+  Verify an order and get a quote (does not create the order). Returns pricing breakdown, shipment allocation, and validity status.
+  """
+  verifyOrder(input: OrderInput!): OrderQuote
+}
+
+"""A completed order"""
+type Order {
+  """When the order was created"""
+  createdAt: DateTime
+
+  """Customer latitude"""
+  customerLatitude: Decimal
+
+  """Customer longitude"""
+  customerLongitude: Decimal
+
+  """Discount amount in cents"""
+  discountCents: Int
+
+  """Discount formatted as currency"""
+  discountFormatted: String
+
+  """Unique order identifier"""
+  id: ID
+
+  """Human-readable order number (ORD-XXXXX)"""
+  orderNumber: String
+
+  """Total quantity ordered"""
+  quantity: Int
+
+  """Shipments for this order"""
+  shipments: [OrderShipment!]
+
+  """Total shipping cost in cents"""
+  shippingCents: Int
+
+  """Shipping formatted as currency"""
+  shippingFormatted: String
+
+  """Order status"""
+  status: OrderStatus
+
+  """Subtotal before discount in cents"""
+  subtotalCents: Int
+
+  """Subtotal formatted as currency"""
+  subtotalFormatted: String
+
+  """Grand total in cents"""
+  totalCents: Int
+
+  """Total formatted as currency"""
+  totalFormatted: String
+
+  """When the order was last updated"""
+  updatedAt: DateTime
+}
+
+"""Input for creating or verifying an order"""
+input OrderInput {
+  """Customer latitude (-90 to 90)"""
+  latitude: Float!
+
+  """Customer longitude (-180 to 180)"""
+  longitude: Float!
+
+  """Number of units to order (minimum 1)"""
+  quantity: Int!
+}
+
+"""Order verification/quote result"""
+type OrderQuote {
+  """Customer latitude"""
+  customerLatitude: Float
+
+  """Customer longitude"""
+  customerLongitude: Float
+
+  """Discount calculation"""
+  discount: DiscountResult
+
+  """Error message if not valid"""
+  errorMessage: String
+
+  """Grand total in cents (discounted subtotal + shipping)"""
+  grandTotalCents: Int
+
+  """Grand total formatted as currency"""
+  grandTotalFormatted: String
+
+  """Whether the order can be fulfilled"""
+  isValid: Boolean
+
+  """Product being ordered"""
+  product: QuoteProduct
+
+  """Requested quantity"""
+  quantity: Int
+
+  """Shipment allocations from warehouses"""
+  shipments: [ShipmentDetail!]
+
+  """Shipping cost validity (15% rule)"""
+  shippingValidity: ShippingValidity
+
+  """Subtotal before discount in cents"""
+  subtotalCents: Int
+
+  """Subtotal formatted as currency"""
+  subtotalFormatted: String
+
+  """Total shipping cost in cents"""
+  totalShippingCostCents: Int
+
+  """Total shipping formatted as currency"""
+  totalShippingFormatted: String
+}
+
+"""A shipment record for an order"""
+type OrderShipment {
+  """When the shipment was created"""
+  createdAt: DateTime
+
+  """Distance in kilometers"""
+  distanceKm: Decimal
+
+  """Unique shipment identifier"""
+  id: ID
+
+  """Number of units in this shipment"""
+  quantity: Int
+
+  """Shipping cost in cents"""
+  shippingCents: Int
+
+  """Shipping cost formatted as currency"""
+  shippingFormatted: String
+
+  """ID of the source warehouse"""
+  warehouseId: ID
+
+  """Name of the source warehouse"""
+  warehouseName: String
+}
+
+"""Status of an order"""
+enum OrderStatus {
+  """Order has been cancelled"""
+  CANCELLED
+
+  """Order has been completed"""
+  COMPLETED
+
+  """Order is pending processing"""
+  PENDING
+}
+
+"""A product available for sale"""
+type Product {
+  """When the product was created"""
+  createdAt: DateTime
+
+  """Product description"""
+  description: String
+
+  """Unique product identifier"""
+  id: ID
+
+  """Product name"""
+  name: String
+
+  """Price formatted as currency string"""
+  priceFormatted: String
+
+  """Price in cents (e.g., 15000 = $150.00)"""
+  priceInCents: Int
+
+  """Stock Keeping Unit code"""
+  sku: String
+
+  """When the product was last updated"""
+  updatedAt: DateTime
+
+  """Weight in grams"""
+  weightGrams: Int
+
+  """Weight in kilograms"""
+  weightKg: Float
+}
+
+type Query {
+  """Get a single order by ID"""
+  order(
+    """Order ID"""
+    id: ID!
+  ): Order
+
+  """Get a single order by order number"""
+  orderByNumber(
+    """Order number (ORD-XXXXX)"""
+    orderNumber: String!
+  ): Order
+
+  """Get all orders (newest first)"""
+  orders(
+    """Maximum number of orders to return"""
+    limit: Int
+  ): [Order!]
+
+  """Get a single product by ID"""
+  product(
+    """Product ID"""
+    id: ID!
+  ): Product
+
+  """Get all available products"""
+  products: [Product!]
+
+  """Get total stock across all warehouses"""
+  totalStock: Int
+
+  """Get a single warehouse by ID"""
+  warehouse(
+    """Warehouse ID"""
+    id: ID!
+  ): Warehouse
+
+  """Get all warehouses with current stock levels"""
+  warehouses: [Warehouse!]
+}
+
+"""Product information in a quote"""
+type QuoteProduct {
+  """Product ID"""
+  id: ID
+
+  """Product name"""
+  name: String
+
+  """Unit price in cents"""
+  unitPriceCents: Int
+
+  """Unit price formatted as currency"""
+  unitPriceFormatted: String
+
+  """Weight in grams"""
+  weightGrams: Int
+}
+
+"""Details of a shipment from a single warehouse"""
+type ShipmentDetail {
+  """Distance in kilometers to customer"""
+  distanceKm: Float
+
+  """Number of units shipped from this warehouse"""
+  quantity: Int
+
+  """Shipping cost in cents for this shipment"""
+  shippingCostCents: Int
+
+  """Shipping cost formatted as currency"""
+  shippingCostFormatted: String
+
+  """ID of the warehouse"""
+  warehouseId: ID
+
+  """Name of the warehouse"""
+  warehouseName: String
+}
+
+"""Shipping cost validity check result (15% rule)"""
+type ShippingValidity {
+  """Actual shipping cost in cents"""
+  actualShippingCents: Int
+
+  """Actual shipping formatted as currency"""
+  actualShippingFormatted: String
+
+  """Whether shipping cost is within 15% of discounted subtotal"""
+  isValid: Boolean
+
+  """Maximum allowed shipping formatted as currency"""
+  maxAllowedFormatted: String
+
+  """Maximum allowed shipping (15% of discounted subtotal)"""
+  maxAllowedShippingCents: Int
+
+  """Maximum allowed percentage (15)"""
+  maxPercentage: Float
+
+  """Actual shipping as percentage of discounted subtotal"""
+  shippingPercentage: Float
+}
+
+"""A warehouse/distribution center"""
+type Warehouse {
+  """When the warehouse was created"""
+  createdAt: DateTime
+
+  """Unique warehouse identifier"""
+  id: ID
+
+  """Latitude coordinate"""
+  latitude: Decimal
+
+  """Longitude coordinate"""
+  longitude: Decimal
+
+  """Warehouse name/location"""
+  name: String
+
+  """Current stock level"""
+  stock: Int
+
+  """When the warehouse was last updated"""
+  updatedAt: DateTime
+}
