@@ -2,6 +2,7 @@
  * GraphQL Query Resolvers
  *
  * Implements read operations for products, warehouses, and orders.
+ * Updated for multi-product architecture.
  */
 
 import { builder } from '../builder.js';
@@ -49,9 +50,16 @@ builder.queryField('product', (t) =>
 builder.queryField('warehouses', (t) =>
   t.field({
     type: [WarehouseType],
-    description: 'Get all warehouses with current stock levels',
+    description: 'Get all warehouses with current stock levels per product',
     resolve: async () => {
       const warehouses = await prisma.warehouse.findMany({
+        include: {
+          stocks: {
+            include: {
+              product: true,
+            },
+          },
+        },
         orderBy: { name: 'asc' },
       });
       return warehouses;
@@ -62,7 +70,7 @@ builder.queryField('warehouses', (t) =>
 builder.queryField('warehouse', (t) =>
   t.field({
     type: WarehouseType,
-    description: 'Get a single warehouse by ID',
+    description: 'Get a single warehouse by ID with stock levels',
     nullable: true,
     args: {
       id: t.arg.id({ required: true, description: 'Warehouse ID' }),
@@ -70,6 +78,13 @@ builder.queryField('warehouse', (t) =>
     resolve: async (_, { id }) => {
       const warehouse = await prisma.warehouse.findUnique({
         where: { id: String(id) },
+        include: {
+          stocks: {
+            include: {
+              product: true,
+            },
+          },
+        },
       });
       return warehouse;
     },
@@ -78,12 +93,19 @@ builder.queryField('warehouse', (t) =>
 
 builder.queryField('totalStock', (t) =>
   t.int({
-    description: 'Get total stock across all warehouses',
-    resolve: async () => {
-      const result = await prisma.warehouse.aggregate({
-        _sum: { stock: true },
+    description: 'Get total stock across all warehouses for all products',
+    args: {
+      productId: t.arg.id({
+        required: false,
+        description: 'Optional product ID to filter by',
+      }),
+    },
+    resolve: async (_, { productId }) => {
+      const result = await prisma.warehouseStock.aggregate({
+        _sum: { quantity: true },
+        where: productId ? { productId: String(productId) } : undefined,
       });
-      return result._sum.stock ?? 0;
+      return result._sum.quantity ?? 0;
     },
   })
 );
@@ -94,7 +116,7 @@ builder.queryField('totalStock', (t) =>
 builder.queryField('orders', (t) =>
   t.field({
     type: [OrderType],
-    description: 'Get all orders (newest first)',
+    description: 'Get all orders with items and shipments (newest first)',
     args: {
       limit: t.arg.int({
         required: false,
@@ -104,9 +126,14 @@ builder.queryField('orders', (t) =>
     resolve: async (_, { limit }) => {
       const orders = await prisma.order.findMany({
         include: {
-          shipments: {
+          items: {
             include: {
-              warehouse: true,
+              product: true,
+              shipments: {
+                include: {
+                  warehouse: true,
+                },
+              },
             },
           },
         },
@@ -121,7 +148,7 @@ builder.queryField('orders', (t) =>
 builder.queryField('order', (t) =>
   t.field({
     type: OrderType,
-    description: 'Get a single order by ID',
+    description: 'Get a single order by ID with items and shipments',
     nullable: true,
     args: {
       id: t.arg.id({ required: true, description: 'Order ID' }),
@@ -130,9 +157,14 @@ builder.queryField('order', (t) =>
       const order = await prisma.order.findUnique({
         where: { id: String(id) },
         include: {
-          shipments: {
+          items: {
             include: {
-              warehouse: true,
+              product: true,
+              shipments: {
+                include: {
+                  warehouse: true,
+                },
+              },
             },
           },
         },
@@ -157,9 +189,14 @@ builder.queryField('orderByNumber', (t) =>
       const order = await prisma.order.findUnique({
         where: { orderNumber },
         include: {
-          shipments: {
+          items: {
             include: {
-              warehouse: true,
+              product: true,
+              shipments: {
+                include: {
+                  warehouse: true,
+                },
+              },
             },
           },
         },

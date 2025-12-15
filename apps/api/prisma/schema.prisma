@@ -1,6 +1,7 @@
 // =============================================
 // ScreenCloud Order Management System
 // Prisma Database Schema (Prisma 7)
+// Multi-Product, Multi-Item Architecture
 // =============================================
 
 generator client {
@@ -27,7 +28,7 @@ enum OrderStatus {
 // =============================================
 
 /// Product model - represents items available for sale
-/// Currently only SCOS Station P1 Pro, but designed for future expansion
+/// Supports multiple products (e.g., SCOS Station P1 Pro, accessories, etc.)
 model Product {
   id           String   @id @default(uuid())
   sku          String   @unique
@@ -38,66 +39,111 @@ model Product {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  // Relations
+  warehouseStocks WarehouseStock[]
+  orderItems      OrderItem[]
+
   @@map("products")
 }
 
 /// Warehouse model - represents distribution centers worldwide
-/// Stock is tracked per warehouse for the single product (SCOS P1 Pro)
+/// Stock is tracked per product via WarehouseStock
 model Warehouse {
   id        String   @id @default(uuid())
   name      String   @unique
   latitude  Decimal  @db.Decimal(10, 6)
   longitude Decimal  @db.Decimal(10, 6)
-  stock     Int      @default(0) /// Current stock level
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  stocks    WarehouseStock[]
   shipments OrderShipment[]
 
-  @@index([stock])
   @@map("warehouses")
+}
+
+/// WarehouseStock model - tracks inventory per product per warehouse
+/// Enables multi-product inventory management
+model WarehouseStock {
+  id          String   @id @default(uuid())
+  warehouseId String
+  productId   String
+  quantity    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, productId])
+  @@index([productId])
+  @@index([warehouseId])
+  @@map("warehouse_stocks")
 }
 
 /// Order model - represents a customer order
 /// Contains pricing breakdown and customer location
+/// Supports multiple items via OrderItem
 model Order {
   id            String      @id @default(uuid())
   orderNumber   String      @unique /// Human-readable order number (e.g., ORD-20241215-XXXX)
-  quantity      Int
   customerLat   Decimal     @db.Decimal(10, 6)
   customerLong  Decimal     @db.Decimal(10, 6)
-  subtotalCents Int         /// Price × Quantity (before discount)
-  discountCents Int         /// Volume discount amount
-  shippingCents Int         /// Total shipping cost
+  subtotalCents Int         /// Sum of all item subtotals (before discount)
+  discountCents Int         /// Volume discount amount (applied to total)
+  shippingCents Int         /// Total shipping cost (sum of all shipments)
   totalCents    Int         /// Final total (subtotal - discount + shipping)
   status        OrderStatus @default(COMPLETED)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  shipments OrderShipment[]
+  // Relations
+  items OrderItem[]
 
   @@index([status])
   @@index([createdAt])
   @@map("orders")
 }
 
-/// OrderShipment model - tracks which warehouse(s) fulfilled an order
-/// An order can be split across multiple warehouses
-model OrderShipment {
-  id            String    @id @default(uuid())
-  orderId       String
-  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  warehouseId   String
-  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
-  quantity      Int       /// Number of units shipped from this warehouse
-  distanceKm    Decimal   @db.Decimal(10, 2) /// Distance from warehouse to customer
-  shippingCents Int       /// Shipping cost for this shipment
+/// OrderItem model - represents a line item in an order
+/// Each item is a product with a quantity and price snapshot
+model OrderItem {
+  id             String   @id @default(uuid())
+  orderId        String
+  productId      String
+  quantity       Int
+  unitPriceCents Int      /// Price snapshot at time of order
+  subtotalCents  Int      /// unitPriceCents × quantity
+  createdAt      DateTime @default(now())
 
-  createdAt DateTime @default(now())
+  // Relations
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id])
+  shipments OrderShipment[]
 
   @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+/// OrderShipment model - tracks which warehouse(s) fulfilled an order item
+/// An order item can be split across multiple warehouses
+model OrderShipment {
+  id            String   @id @default(uuid())
+  orderItemId   String
+  warehouseId   String
+  quantity      Int      /// Number of units shipped from this warehouse for this item
+  distanceKm    Decimal  @db.Decimal(10, 2) /// Distance from warehouse to customer
+  shippingCents Int      /// Shipping cost for this shipment
+  createdAt     DateTime @default(now())
+
+  // Relations
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+
+  @@index([orderItemId])
   @@index([warehouseId])
   @@map("order_shipments")
 }

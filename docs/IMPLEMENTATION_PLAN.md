@@ -364,6 +364,153 @@ This document outlines the step-by-step implementation plan for building a produ
 
 ---
 
+## Phase 7.9: Multi-Product & Multi-Item Order Architecture (Critical Refactor)
+
+> **Critical Issue:** The current architecture has fundamental limitations:
+> 1. `Warehouse.stock` is a single integer - can't track stock per product
+> 2. `Order` has single `quantity` - can't handle multiple products in one order
+> 3. `OrderShipment` links to Order - should link to OrderItem for multi-product
+> 4. `OrderService.getProduct()` uses `findFirst()` - hardcoded single product
+
+### Current vs Target Architecture
+
+```
+CURRENT (Single Product):
+┌─────────┐     ┌───────────┐     ┌─────────────────┐
+│ Product │     │ Warehouse │     │      Order      │
+│         │     │ stock: Int│────▶│ quantity: Int   │
+│         │     │           │     │ shipments[]     │
+└─────────┘     └───────────┘     └─────────────────┘
+
+TARGET (Multi-Product, Multi-Item):
+┌─────────┐     ┌────────────────┐     ┌───────────┐
+│ Product │◀───▶│ WarehouseStock │◀───▶│ Warehouse │
+│         │     │ productId      │     │           │
+│         │     │ warehouseId    │     │           │
+│         │     │ quantity       │     │           │
+└─────────┘     └────────────────┘     └───────────┘
+     │
+     │          ┌───────────┐     ┌───────────────┐
+     └─────────▶│ OrderItem │◀───▶│     Order     │
+                │ productId │     │ items[]       │
+                │ quantity  │     │ totals...     │
+                │ shipments[]│    └───────────────┘
+                └───────────┘
+                      │
+                      ▼
+                ┌───────────────┐
+                │ OrderShipment │
+                │ orderItemId   │
+                │ warehouseId   │
+                │ quantity      │
+                └───────────────┘
+```
+
+### 7.9.1 Database Schema Migration
+
+- [ ] Create new `WarehouseStock` model (warehouseId, productId, quantity)
+- [ ] Create new `OrderItem` model (orderId, productId, quantity, unitPriceCents, subtotalCents)
+- [ ] Update `Warehouse` model - remove `stock` field, add `stocks` relation
+- [ ] Update `Order` model - remove `quantity`, add `items` relation
+- [ ] Update `OrderShipment` model - change `orderId` to `orderItemId`
+- [ ] Create migration script for existing data
+- [ ] Update seed data to populate WarehouseStock
+- [ ] **COMMIT:** "feat(api): migrate schema to multi-product architecture"
+
+**New Schema:**
+```prisma
+model WarehouseStock {
+  id          String    @id @default(uuid())
+  warehouseId String
+  productId   String
+  quantity    Int       @default(0)
+  
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
+  
+  @@unique([warehouseId, productId])
+  @@index([productId])
+}
+
+model OrderItem {
+  id             String   @id @default(uuid())
+  orderId        String
+  productId      String
+  quantity       Int
+  unitPriceCents Int
+  subtotalCents  Int
+  
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id])
+  shipments OrderShipment[]
+  
+  @@index([orderId])
+  @@index([productId])
+}
+```
+
+### 7.9.2 Update Domain Logic
+
+- [ ] Update `WarehouseOptimizer` to accept productId parameter
+  - `optimizeForProduct(productId, quantity, customerLat, customerLng)`
+  - Fetch stock from WarehouseStock instead of Warehouse.stock
+  - Greedy algorithm still works: nearest warehouse with stock for THAT product
+- [ ] Create new `OrderItemInput` type: `{ productId, quantity }`
+- [ ] Update `OrderInput` to accept `items: OrderItemInput[]` array
+- [ ] Update `verifyOrder()` to process each item independently
+  - Run optimizer per product
+  - Aggregate shipping costs
+  - Calculate discount on total order value
+- [ ] Update `submitOrder()` to create OrderItems and link shipments
+- [ ] Update stock deduction to use WarehouseStock
+- [ ] **COMMIT:** "feat(api): update domain logic for multi-item orders"
+
+### 7.9.3 Update GraphQL API
+
+- [ ] Add `WarehouseStock` type
+- [ ] Add `OrderItem` type with shipments relation
+- [ ] Update `Warehouse` type - `stocks` instead of `stock`
+- [ ] Add `OrderItemInput` input type
+- [ ] Update `OrderInput` to use `items: [OrderItemInput!]!`
+- [ ] Update `OrderQuote` to include item-level breakdowns
+- [ ] Update queries: `warehouse.stocks`, `order.items`
+- [ ] Update mutations: `verifyOrder`, `submitOrder`
+- [ ] **COMMIT:** "feat(api): update graphql schema for multi-item orders"
+
+### 7.9.4 Update Frontend
+
+- [ ] Fetch products list on app load
+- [ ] Add "Add Item" functionality in NewOrderTab
+- [ ] Support multiple products in cart before verification
+- [ ] Update order form to show item list with quantities
+- [ ] Update OrdersTab to display order items
+- [ ] Update StockTab to show stock per product per warehouse
+- [ ] Regenerate GraphQL types
+- [ ] **COMMIT:** "feat(web): update frontend for multi-item orders"
+
+### 7.9.5 Testing & Validation
+
+- [ ] Update existing tests for new schema
+- [ ] Add tests for multi-product warehouse stock
+- [ ] Add tests for multi-item order verification
+- [ ] Add tests for multi-item order submission
+- [ ] Test greedy algorithm with multiple products
+- [ ] Test stock deduction across products
+- [ ] **COMMIT:** "test: add multi-product order tests"
+
+### Algorithm Behavior (Greedy per Product)
+
+The greedy "nearest is cheapest" algorithm continues to work because:
+1. For each OrderItem (product + quantity):
+   - Filter warehouses that have stock for THAT product
+   - Sort by distance to customer (nearest first)
+   - Allocate from nearest warehouses until quantity fulfilled
+2. Each product is optimized independently
+3. Total shipping = sum of all item shipments
+4. Discount applies to total order subtotal (all items combined)
+
+---
+
 ## Phase 8: DevOps & Documentation
 
 ### 8.1 Create Unified Start Command

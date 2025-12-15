@@ -1,7 +1,7 @@
 /**
  * Quote GraphQL Types
  *
- * Types for order verification/quoting.
+ * Types for order verification/quoting (multi-item support).
  * Note: All monetary values are in cents.
  */
 
@@ -42,7 +42,6 @@ builder.objectType(DiscountResultType, {
 
 /**
  * Shipping validity result type
- * Matches domain ShippingValidityResult from pricing/shipping.ts
  */
 export const ShippingValidityType = builder.objectRef<{
   isValid: boolean;
@@ -79,51 +78,14 @@ builder.objectType(ShippingValidityType, {
 });
 
 /**
- * Product summary in quote
+ * Quote for a single item in the order
  */
-export const QuoteProductType = builder.objectRef<{
-  id: string;
-  name: string;
-  unitPriceCents: number;
-  weightGrams: number;
-}>('QuoteProduct');
-
-builder.objectType(QuoteProductType, {
-  description: 'Product information in a quote',
-  fields: (t) => ({
-    id: t.exposeID('id', { description: 'Product ID' }),
-    name: t.exposeString('name', { description: 'Product name' }),
-    unitPriceCents: t.exposeInt('unitPriceCents', {
-      description: 'Unit price in cents',
-    }),
-    weightGrams: t.exposeInt('weightGrams', {
-      description: 'Weight in grams',
-    }),
-  }),
-});
-
-/**
- * Order quote type
- */
-export const OrderQuoteType = builder.objectRef<{
-  isValid: boolean;
-  errorMessage: string | null;
+export const OrderItemQuoteType = builder.objectRef<{
+  productId: string;
+  productName: string;
   quantity: number;
-  customerLatitude: number;
-  customerLongitude: number;
-  product: {
-    id: string;
-    name: string;
-    unitPriceCents: number;
-    weightGrams: number;
-  };
-  discount: {
-    originalAmountCents: number;
-    discountAmountCents: number;
-    discountedAmountCents: number;
-    discountPercentage: number;
-    tierName: string;
-  };
+  unitPriceCents: number;
+  subtotalCents: number;
   shipments: Array<{
     warehouseId: string;
     warehouseName: string;
@@ -131,6 +93,72 @@ export const OrderQuoteType = builder.objectRef<{
     distanceKm: number;
     shippingCostCents: number;
   }>;
+  shippingCostCents: number;
+  canFulfill: boolean;
+  errorMessage: string | null;
+}>('OrderItemQuote');
+
+builder.objectType(OrderItemQuoteType, {
+  description: 'Quote for a single item in the order',
+  fields: (t) => ({
+    productId: t.exposeID('productId', { description: 'Product ID' }),
+    productName: t.exposeString('productName', { description: 'Product name' }),
+    quantity: t.exposeInt('quantity', { description: 'Quantity requested' }),
+    unitPriceCents: t.exposeInt('unitPriceCents', { description: 'Unit price in cents' }),
+    subtotalCents: t.exposeInt('subtotalCents', {
+      description: 'Item subtotal (unitPrice × quantity)',
+    }),
+    shipments: t.field({
+      type: [ShipmentDetailType],
+      description: 'Shipment allocations for this item',
+      resolve: (q) => q.shipments,
+    }),
+    shippingCostCents: t.exposeInt('shippingCostCents', {
+      description: 'Shipping cost for this item',
+    }),
+    canFulfill: t.exposeBoolean('canFulfill', {
+      description: 'Whether this item can be fulfilled',
+    }),
+    errorMessage: t.exposeString('errorMessage', {
+      description: 'Error message if item cannot be fulfilled',
+      nullable: true,
+    }),
+  }),
+});
+
+/**
+ * Complete order quote (multi-item)
+ */
+export const OrderQuoteType = builder.objectRef<{
+  isValid: boolean;
+  errorMessage: string | null;
+  customerLatitude: number;
+  customerLongitude: number;
+  items: Array<{
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPriceCents: number;
+    subtotalCents: number;
+    shipments: Array<{
+      warehouseId: string;
+      warehouseName: string;
+      quantity: number;
+      distanceKm: number;
+      shippingCostCents: number;
+    }>;
+    shippingCostCents: number;
+    canFulfill: boolean;
+    errorMessage: string | null;
+  }>;
+  subtotalCents: number;
+  discount: {
+    originalAmountCents: number;
+    discountAmountCents: number;
+    discountedAmountCents: number;
+    discountPercentage: number;
+    tierName: string;
+  };
   totalShippingCostCents: number;
   shippingValidity: {
     isValid: boolean;
@@ -144,17 +172,14 @@ export const OrderQuoteType = builder.objectRef<{
 }>('OrderQuote');
 
 builder.objectType(OrderQuoteType, {
-  description: 'Order verification/quote result',
+  description: 'Order verification/quote result (multi-item)',
   fields: (t) => ({
     isValid: t.exposeBoolean('isValid', {
-      description: 'Whether the order can be fulfilled',
+      description: 'Whether the entire order can be fulfilled',
     }),
     errorMessage: t.exposeString('errorMessage', {
       description: 'Error message if not valid',
       nullable: true,
-    }),
-    quantity: t.exposeInt('quantity', {
-      description: 'Requested quantity',
     }),
     customerLatitude: t.float({
       description: 'Customer latitude',
@@ -164,20 +189,18 @@ builder.objectType(OrderQuoteType, {
       description: 'Customer longitude',
       resolve: (q) => q.customerLongitude,
     }),
-    product: t.field({
-      type: QuoteProductType,
-      description: 'Product being ordered',
-      resolve: (q) => q.product,
+    items: t.field({
+      type: [OrderItemQuoteType],
+      description: 'Quotes for each item in the order',
+      resolve: (q) => q.items,
+    }),
+    subtotalCents: t.exposeInt('subtotalCents', {
+      description: 'Order subtotal before discount',
     }),
     discount: t.field({
       type: DiscountResultType,
-      description: 'Discount calculation',
+      description: 'Discount calculation (applied to total order)',
       resolve: (q) => q.discount,
-    }),
-    shipments: t.field({
-      type: [ShipmentDetailType],
-      description: 'Shipment allocations from warehouses',
-      resolve: (q) => q.shipments,
     }),
     totalShippingCostCents: t.exposeInt('totalShippingCostCents', {
       description: 'Total shipping cost in cents',
@@ -190,9 +213,10 @@ builder.objectType(OrderQuoteType, {
     grandTotalCents: t.exposeInt('grandTotalCents', {
       description: 'Grand total in cents (discounted subtotal + shipping)',
     }),
-    subtotalCents: t.int({
-      description: 'Subtotal before discount in cents (alias for discount.originalAmountCents)',
-      resolve: (q) => q.discount.originalAmountCents,
+    // Computed: total quantity across all items
+    totalQuantity: t.int({
+      description: 'Total quantity across all items',
+      resolve: (q) => q.items.reduce((sum, item) => sum + item.quantity, 0),
     }),
   }),
 });

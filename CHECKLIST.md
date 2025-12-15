@@ -279,6 +279,62 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
+## Phase 7.9: Multi-Product & Multi-Item Architecture 🔴
+
+> **Critical Refactor:** Current architecture has fundamental limitations:
+> - Warehouse.stock is single Int (can't track per product)
+> - Order has single quantity (can't have multiple items)
+> - OrderShipment links to Order (should link to OrderItem)
+
+### 7.9.1 Database Schema Migration
+
+- [ ] Create `WarehouseStock` model (warehouseId, productId, quantity)
+- [ ] Create `OrderItem` model (orderId, productId, quantity, prices)
+- [ ] Update `Warehouse` - remove stock, add stocks[]
+- [ ] Update `Order` - remove quantity, add items[]
+- [ ] Update `OrderShipment` - orderItemId instead of orderId
+- [ ] Create migration script & update seed
+- [ ] **COMMIT:** `feat(api): migrate schema to multi-product architecture`
+
+### 7.9.2 Domain Logic Updates
+
+- [ ] Update `WarehouseOptimizer.optimizeForProduct(productId, ...)`
+- [ ] Create `OrderItemInput` type
+- [ ] Update `OrderInput` to use items[] array
+- [ ] Update `verifyOrder()` - process each item, run optimizer per product
+- [ ] Update `submitOrder()` - create OrderItems, link shipments
+- [ ] Update stock deduction to use WarehouseStock
+- [ ] **COMMIT:** `feat(api): update domain logic for multi-item orders`
+
+### 7.9.3 GraphQL API Updates
+
+- [ ] Add `WarehouseStock`, `OrderItem` types
+- [ ] Add `OrderItemInput` input type
+- [ ] Update `OrderInput` with items[]
+- [ ] Update `OrderQuote` with item-level breakdowns
+- [ ] Update warehouse/order queries
+- [ ] **COMMIT:** `feat(api): update graphql schema for multi-item orders`
+
+### 7.9.4 Frontend Updates
+
+- [ ] Fetch products list on load
+- [ ] Add "Add Item" UI in NewOrderTab
+- [ ] Support multiple products before verification
+- [ ] Update order display for items
+- [ ] Update StockTab for stock per product
+- [ ] Regenerate GraphQL types
+- [ ] **COMMIT:** `feat(web): update frontend for multi-item orders`
+
+### 7.9.5 Testing
+
+- [ ] Update existing tests for new schema
+- [ ] Multi-product warehouse stock tests
+- [ ] Multi-item order verification tests
+- [ ] Greedy algorithm per product tests
+- [ ] **COMMIT:** `test: add multi-product order tests`
+
+---
+
 ## Phase 8: DevOps & Documentation
 
 ### 8.1 Unified Start Command
@@ -351,16 +407,17 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ## Progress
 
-| Phase             | Status         | Commits  |
-| ----------------- | -------------- | -------- |
-| 1. Infrastructure | ✅ Complete    | 3/3      |
-| 2. Database       | ✅ Complete    | 1/1      |
-| 3. Server Setup   | ✅ Complete    | 1/1      |
-| 4. Testing Setup  | ✅ Complete    | 1/1      |
-| 5. Domain Logic   | ✅ Complete    | 1/1      |
-| 6. GraphQL API    | ✅ Complete    | 1/1      |
-| 7. Frontend       | ✅ Complete    | 4/4      |
-| 8. DevOps         | ⬜ Not Started | 0/5      |
-| **Total**         | **81%**        | **12/17**|
+| Phase                | Status         | Commits  |
+| -------------------- | -------------- | -------- |
+| 1. Infrastructure    | ✅ Complete    | 3/3      |
+| 2. Database          | ✅ Complete    | 1/1      |
+| 3. Server Setup      | ✅ Complete    | 1/1      |
+| 4. Testing Setup     | ✅ Complete    | 1/1      |
+| 5. Domain Logic      | ✅ Complete    | 1/1      |
+| 6. GraphQL API       | ✅ Complete    | 1/1      |
+| 7. Frontend          | ✅ Complete    | 4/4      |
+| 7.9 Multi-Product    | 🔴 Critical    | 0/5      |
+| 8. DevOps            | ⬜ Not Started | 0/5      |
+| **Total**            | **67%**        | **12/22**|
 
-Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete
+Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete | 🔴 Critical Refactor

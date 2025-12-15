@@ -4,7 +4,8 @@
  * Handles order verification and submission with:
  * - Quote generation without database write (verify)
  * - Order submission with transaction and pessimistic locking (submit)
- * - Automatic stock updates
+ * - Automatic stock updates (per product per warehouse)
+ * - Multi-item order support
  */
 
 import { nanoid } from 'nanoid';
@@ -16,7 +17,31 @@ import {
   getDiscountTier,
 } from '../pricing/discount.js';
 import { checkShippingValidity, ShippingValidityResult } from '../pricing/shipping.js';
-import type { Order, OrderShipment, OrderStatus, Product, Warehouse } from '../../generated/prisma/client.js';
+import type {
+  Order,
+  OrderItem,
+  OrderShipment,
+  OrderStatus,
+  Product,
+  Warehouse,
+  WarehouseStock,
+} from '../../generated/prisma/client.js';
+
+// ============================================
+// Input Types
+// ============================================
+
+/**
+ * Single item in an order request
+ */
+export interface OrderItemInput {
+  productId: string;
+  quantity: number;
+}
+
+// ============================================
+// Quote Types (Verification Response)
+// ============================================
 
 /**
  * Discount result formatted for GraphQL response
@@ -30,10 +55,79 @@ export interface DiscountResult {
 }
 
 /**
+ * Shipment details for a single allocation
+ */
+export interface ShipmentDetail {
+  warehouseId: string;
+  warehouseName: string;
+  quantity: number;
+  distanceKm: number;
+  shippingCostCents: number;
+}
+
+/**
+ * Quote for a single item in the order
+ */
+export interface OrderItemQuote {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  subtotalCents: number;
+  shipments: ShipmentDetail[];
+  shippingCostCents: number;
+  canFulfill: boolean;
+  errorMessage: string | null;
+}
+
+/**
+ * Complete order quote (multi-item)
+ */
+export interface OrderQuote {
+  /** Whether the order can be fulfilled and is valid */
+  isValid: boolean;
+  /** Validation error message if not valid */
+  errorMessage: string | null;
+  /** Customer coordinates */
+  customerLatitude: number;
+  customerLongitude: number;
+  /** Item-level quotes */
+  items: OrderItemQuote[];
+  /** Order subtotal (sum of all item subtotals) */
+  subtotalCents: number;
+  /** Discount calculation (applied to total order) */
+  discount: DiscountResult;
+  /** Total shipping cost */
+  totalShippingCostCents: number;
+  /** Shipping validity check */
+  shippingValidity: ShippingValidityResult;
+  /** Grand total (subtotal - discount + shipping) */
+  grandTotalCents: number;
+}
+
+// ============================================
+// Result Types
+// ============================================
+
+/**
+ * Submitted order result
+ */
+export interface OrderResult {
+  order: Order & {
+    items: (OrderItem & { shipments: OrderShipment[] })[];
+  };
+  quote: OrderQuote;
+}
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
  * Map domain discount result to GraphQL format
  */
-function mapDiscountResult(domain: DomainDiscountResult, quantity: number): DiscountResult {
-  const tier = getDiscountTier(quantity);
+function mapDiscountResult(domain: DomainDiscountResult, totalQuantity: number): DiscountResult {
+  const tier = getDiscountTier(totalQuantity);
   const tierName = tier
     ? tier.percentage === 0
       ? 'No Discount'
@@ -49,63 +143,14 @@ function mapDiscountResult(domain: DomainDiscountResult, quantity: number): Disc
   };
 }
 
-/**
- * Shipment details in a quote/order
- */
-export interface ShipmentDetail {
-  warehouseId: string;
-  warehouseName: string;
-  quantity: number;
-  distanceKm: number;
-  shippingCostCents: number;
-}
+// ============================================
+// Order Service Class
+// ============================================
 
 /**
- * Order quote result (verification without DB write)
- */
-export interface OrderQuote {
-  /** Whether the order can be fulfilled and is valid */
-  isValid: boolean;
-  /** Validation error message if not valid */
-  errorMessage: string | null;
-  /** Requested quantity */
-  quantity: number;
-  /** Customer coordinates */
-  customerLatitude: number;
-  customerLongitude: number;
-  /** Product details */
-  product: {
-    id: string;
-    name: string;
-    unitPriceCents: number;
-    weightGrams: number;
-  };
-  /** Discount calculation (mapped to GraphQL format) */
-  discount: DiscountResult;
-  /** Shipment allocations */
-  shipments: ShipmentDetail[];
-  /** Total shipping cost */
-  totalShippingCostCents: number;
-  /** Shipping validity check */
-  shippingValidity: ShippingValidityResult;
-  /** Grand total (after discount + shipping) */
-  grandTotalCents: number;
-}
-
-/**
- * Submitted order result
- */
-export interface OrderResult {
-  /** The created order */
-  order: Order & { shipments: OrderShipment[] };
-  /** The quote used for this order */
-  quote: OrderQuote;
-}
-
-/**
- * Order Service class
+ * Order Service
  *
- * Provides methods for verifying and submitting orders.
+ * Provides methods for verifying and submitting multi-item orders.
  */
 export class OrderService {
   private optimizer: WarehouseOptimizer;
@@ -124,59 +169,38 @@ export class OrderService {
   }
 
   /**
-   * Map Prisma Product to domain interface
-   *
-   * Why this exists: Interface mapping, NOT type conversion.
-   * - Prisma schema uses `priceInCents` (persistence layer naming)
-   * - Domain/Quote interface uses `unitPriceCents` (business layer naming)
-   * - Decouples domain logic from Prisma model shape
+   * Get a product by ID
    */
-  private normalizeProduct(product: Product): {
-    id: string;
-    name: string;
-    unitPriceCents: number;
-    weightGrams: number;
-  } {
-    return {
-      id: product.id,
-      name: product.name,
-      unitPriceCents: product.priceInCents, // Rename: priceInCents → unitPriceCents
-      weightGrams: product.weightGrams,
-    };
+  async getProduct(productId: string): Promise<Product | null> {
+    return prisma.product.findUnique({ where: { id: productId } });
   }
 
   /**
-   * Get the product for ordering
-   * Currently assumes single product system
+   * Get all products
    */
-  private async getProduct(): Promise<Product> {
-    const product = await prisma.product.findFirst();
-    if (!product) {
-      throw new Error('No product found in database');
-    }
-    return product;
+  async getProducts(): Promise<Product[]> {
+    return prisma.product.findMany({ orderBy: { name: 'asc' } });
   }
 
   /**
-   * Get all warehouses with stock
+   * Get warehouse stock for a specific product
+   * Returns warehouses with stock data formatted for the optimizer
    */
-  private async getWarehouses(): Promise<Warehouse[]> {
-    return prisma.warehouse.findMany({
-      orderBy: { name: 'asc' },
+  private async getWarehouseDataForProduct(
+    productId: string,
+    weightGrams: number
+  ): Promise<WarehouseData[]> {
+    const warehouseStocks = await prisma.warehouseStock.findMany({
+      where: { productId },
+      include: { warehouse: true },
     });
-  }
 
-  /**
-   * Convert Prisma warehouses to optimizer format
-   * Note: Prisma Decimal has .toNumber() method built-in (based on decimal.js)
-   */
-  private toWarehouseData(warehouses: Warehouse[], weightGrams: number): WarehouseData[] {
-    return warehouses.map((wh) => ({
-      id: wh.id,
-      name: wh.name,
-      latitude: wh.latitude.toNumber(),
-      longitude: wh.longitude.toNumber(),
-      stock: wh.stock,
+    return warehouseStocks.map((ws) => ({
+      id: ws.warehouse.id,
+      name: ws.warehouse.name,
+      latitude: ws.warehouse.latitude.toNumber(),
+      longitude: ws.warehouse.longitude.toNumber(),
+      stock: ws.quantity,
       weightGrams,
     }));
   }
@@ -186,108 +210,192 @@ export class OrderService {
    *
    * Use this to get a quote before submitting.
    *
-   * @param quantity - Number of units to order
+   * @param items - Array of items to order (productId, quantity)
    * @param latitude - Customer latitude
    * @param longitude - Customer longitude
    * @returns Order quote with pricing and validity
    */
   async verifyOrder(
-    quantity: number,
+    items: OrderItemInput[],
     latitude: number,
     longitude: number
   ): Promise<OrderQuote> {
     // Validate inputs
-    if (quantity < 1) {
-      return this.createInvalidQuote(
-        quantity,
-        latitude,
-        longitude,
-        'Quantity must be at least 1'
-      );
+    if (!items || items.length === 0) {
+      return this.createInvalidQuote(latitude, longitude, 'At least one item is required');
     }
 
     if (latitude < -90 || latitude > 90) {
-      return this.createInvalidQuote(
-        quantity,
-        latitude,
-        longitude,
-        'Latitude must be between -90 and 90'
-      );
+      return this.createInvalidQuote(latitude, longitude, 'Latitude must be between -90 and 90');
     }
 
     if (longitude < -180 || longitude > 180) {
       return this.createInvalidQuote(
-        quantity,
         latitude,
         longitude,
         'Longitude must be between -180 and 180'
       );
     }
 
-    // Get product and warehouses
-    const rawProduct = await this.getProduct();
-    const product = this.normalizeProduct(rawProduct);
-    const warehouses = await this.getWarehouses();
-    const warehouseData = this.toWarehouseData(warehouses, product.weightGrams);
-
-    // Find optimal shipments
-    const optimization = this.optimizer.findOptimalShipments(
-      latitude,
-      longitude,
-      quantity,
-      warehouseData
-    );
-
-    // Check if we can fulfill the order
-    if (!optimization.canFulfill) {
-      return this.createInvalidQuote(
-        quantity,
-        latitude,
-        longitude,
-        `Insufficient stock. Requested: ${quantity}, Available: ${optimization.fulfilledQuantity}`,
-        rawProduct
-      );
+    // Validate each item
+    for (const item of items) {
+      if (item.quantity < 1) {
+        return this.createInvalidQuote(
+          latitude,
+          longitude,
+          `Quantity must be at least 1 for product ${item.productId}`
+        );
+      }
     }
 
-    // Calculate discount
-    const domainDiscount = calculateDiscount(quantity, product.unitPriceCents);
-    const discount = mapDiscountResult(domainDiscount, quantity);
+    // Process each item
+    const itemQuotes: OrderItemQuote[] = [];
+    let orderSubtotal = 0;
+    let orderShipping = 0;
+    let totalQuantity = 0;
+    let hasError = false;
+    let errorMessage: string | null = null;
 
-    // Check shipping validity (use discountedAmountCents for the 15% rule)
-    const shippingValidity = checkShippingValidity(
-      optimization.totalShippingCostCents,
-      discount.discountedAmountCents
-    );
+    for (const item of items) {
+      const product = await this.getProduct(item.productId);
+
+      if (!product) {
+        itemQuotes.push({
+          productId: item.productId,
+          productName: 'Unknown Product',
+          quantity: item.quantity,
+          unitPriceCents: 0,
+          subtotalCents: 0,
+          shipments: [],
+          shippingCostCents: 0,
+          canFulfill: false,
+          errorMessage: `Product not found: ${item.productId}`,
+        });
+        hasError = true;
+        errorMessage = `Product not found: ${item.productId}`;
+        continue;
+      }
+
+      // Get warehouse stock for this product
+      const warehouseData = await this.getWarehouseDataForProduct(
+        product.id,
+        product.weightGrams
+      );
+
+      // Find optimal shipments for this item
+      const optimization = this.optimizer.findOptimalShipments(
+        latitude,
+        longitude,
+        item.quantity,
+        warehouseData
+      );
+
+      const itemSubtotal = product.priceInCents * item.quantity;
+      const itemShipping = optimization.totalShippingCostCents;
+
+      if (!optimization.canFulfill) {
+        itemQuotes.push({
+          productId: product.id,
+          productName: product.name,
+          quantity: item.quantity,
+          unitPriceCents: product.priceInCents,
+          subtotalCents: itemSubtotal,
+          shipments: [],
+          shippingCostCents: 0,
+          canFulfill: false,
+          errorMessage: `Insufficient stock. Requested: ${item.quantity}, Available: ${optimization.fulfilledQuantity}`,
+        });
+        hasError = true;
+        errorMessage = `Insufficient stock for ${product.name}. Requested: ${item.quantity}, Available: ${optimization.fulfilledQuantity}`;
+        continue;
+      }
+
+      // Build shipment details
+      const shipments: ShipmentDetail[] = optimization.shipments.map((s) => ({
+        warehouseId: s.warehouseId,
+        warehouseName: s.warehouseName,
+        quantity: s.quantity,
+        distanceKm: s.distanceKm,
+        shippingCostCents: s.shippingCostCents,
+      }));
+
+      itemQuotes.push({
+        productId: product.id,
+        productName: product.name,
+        quantity: item.quantity,
+        unitPriceCents: product.priceInCents,
+        subtotalCents: itemSubtotal,
+        shipments,
+        shippingCostCents: itemShipping,
+        canFulfill: true,
+        errorMessage: null,
+      });
+
+      orderSubtotal += itemSubtotal;
+      orderShipping += itemShipping;
+      totalQuantity += item.quantity;
+    }
+
+    // If any item failed, return invalid quote
+    if (hasError) {
+      return {
+        isValid: false,
+        errorMessage,
+        customerLatitude: latitude,
+        customerLongitude: longitude,
+        items: itemQuotes,
+        subtotalCents: orderSubtotal,
+        discount: {
+          originalAmountCents: orderSubtotal,
+          discountAmountCents: 0,
+          discountedAmountCents: orderSubtotal,
+          discountPercentage: 0,
+          tierName: 'No Discount',
+        },
+        totalShippingCostCents: orderShipping,
+        shippingValidity: {
+          isValid: false,
+          shippingCostCents: orderShipping,
+          orderAmountCents: orderSubtotal,
+          shippingPercentage: 0,
+          maxAllowedShippingCents: 0,
+          overLimitCents: 0,
+        },
+        grandTotalCents: 0,
+      };
+    }
+
+    // Calculate discount on total order (based on total quantity)
+    const domainDiscount = calculateDiscount(totalQuantity, orderSubtotal / totalQuantity);
+    // Adjust: we need discount based on subtotal, not unit price
+    const discountedSubtotal =
+      orderSubtotal - Math.round(orderSubtotal * (domainDiscount.discountPercentage / 100));
+
+    const discount: DiscountResult = {
+      originalAmountCents: orderSubtotal,
+      discountAmountCents: orderSubtotal - discountedSubtotal,
+      discountedAmountCents: discountedSubtotal,
+      discountPercentage: domainDiscount.discountPercentage,
+      tierName: mapDiscountResult(domainDiscount, totalQuantity).tierName,
+    };
+
+    // Check shipping validity (use discountedSubtotal for the 15% rule)
+    const shippingValidity = checkShippingValidity(orderShipping, discountedSubtotal);
 
     // Calculate grand total
-    const grandTotalCents = discount.discountedAmountCents + optimization.totalShippingCostCents;
-
-    // Build shipment details
-    const shipments: ShipmentDetail[] = optimization.shipments.map((s) => ({
-      warehouseId: s.warehouseId,
-      warehouseName: s.warehouseName,
-      quantity: s.quantity,
-      distanceKm: s.distanceKm,
-      shippingCostCents: s.shippingCostCents,
-    }));
+    const grandTotalCents = discountedSubtotal + orderShipping;
 
     return {
       isValid: shippingValidity.isValid,
       errorMessage: shippingValidity.isValid
         ? null
-        : `Shipping cost exceeds 15% of order amount. Shipping: ${shippingValidity.shippingPercentage}%`,
-      quantity,
+        : `Shipping cost exceeds 15% of order amount. Shipping: ${shippingValidity.shippingPercentage.toFixed(1)}%`,
       customerLatitude: latitude,
       customerLongitude: longitude,
-      product: {
-        id: product.id,
-        name: product.name,
-        unitPriceCents: product.unitPriceCents,
-        weightGrams: product.weightGrams,
-      },
+      items: itemQuotes,
+      subtotalCents: orderSubtotal,
       discount,
-      shipments,
-      totalShippingCostCents: optimization.totalShippingCostCents,
+      totalShippingCostCents: orderShipping,
       shippingValidity,
       grandTotalCents,
     };
@@ -296,30 +404,18 @@ export class OrderService {
   /**
    * Create an invalid quote response
    */
-  private async createInvalidQuote(
-    quantity: number,
+  private createInvalidQuote(
     latitude: number,
     longitude: number,
-    errorMessage: string,
-    rawProduct?: Product
-  ): Promise<OrderQuote> {
-    const prod = rawProduct || (await this.getProduct().catch(() => null));
-    const normalizedProd = prod ? this.normalizeProduct(prod) : null;
-
+    errorMessage: string
+  ): OrderQuote {
     return {
       isValid: false,
       errorMessage,
-      quantity,
       customerLatitude: latitude,
       customerLongitude: longitude,
-      product: normalizedProd
-        ? normalizedProd
-        : {
-            id: '',
-            name: 'Unknown',
-            unitPriceCents: 0,
-            weightGrams: 0,
-          },
+      items: [],
+      subtotalCents: 0,
       discount: {
         originalAmountCents: 0,
         discountAmountCents: 0,
@@ -327,7 +423,6 @@ export class OrderService {
         discountPercentage: 0,
         tierName: 'No Discount',
       },
-      shipments: [],
       totalShippingCostCents: 0,
       shippingValidity: {
         isValid: false,
@@ -346,23 +441,23 @@ export class OrderService {
    *
    * This method:
    * 1. Re-verifies the order to get fresh stock levels
-   * 2. Uses a transaction with SELECT FOR UPDATE to lock warehouse rows
+   * 2. Uses a transaction with SELECT FOR UPDATE to lock warehouse_stocks rows
    * 3. Updates warehouse stock atomically
-   * 4. Creates order and shipment records
+   * 4. Creates order, order items, and shipment records
    *
-   * @param quantity - Number of units to order
+   * @param items - Array of items to order
    * @param latitude - Customer latitude
    * @param longitude - Customer longitude
-   * @returns Created order with shipments
+   * @returns Created order with items and shipments
    * @throws Error if order is invalid or cannot be fulfilled
    */
   async submitOrder(
-    quantity: number,
+    items: OrderItemInput[],
     latitude: number,
     longitude: number
   ): Promise<OrderResult> {
     // First verify the order
-    const quote = await this.verifyOrder(quantity, latitude, longitude);
+    const quote = await this.verifyOrder(items, latitude, longitude);
 
     if (!quote.isValid) {
       throw new Error(quote.errorMessage || 'Order is not valid');
@@ -370,24 +465,44 @@ export class OrderService {
 
     // Execute in a transaction with pessimistic locking
     const order = await prisma.$transaction(async (tx) => {
-      // Lock warehouse rows with SELECT FOR UPDATE
-      // This prevents race conditions when multiple orders are submitted
-      const warehouseIds = quote.shipments.map((s) => s.warehouseId);
+      // Collect all (warehouseId, productId) pairs we need to lock
+      const stocksToLock: Array<{ warehouseId: string; productId: string; quantity: number }> = [];
 
-      // Get fresh warehouse data with lock
-      const lockedWarehouses = await tx.$queryRaw<Warehouse[]>`
-        SELECT * FROM "warehouses" 
-        WHERE id = ANY(${warehouseIds})
+      for (const itemQuote of quote.items) {
+        for (const shipment of itemQuote.shipments) {
+          stocksToLock.push({
+            warehouseId: shipment.warehouseId,
+            productId: itemQuote.productId,
+            quantity: shipment.quantity,
+          });
+        }
+      }
+
+      // Lock all relevant warehouse_stocks rows with SELECT FOR UPDATE
+      const warehouseIds = [...new Set(stocksToLock.map((s) => s.warehouseId))];
+      const productIds = [...new Set(stocksToLock.map((s) => s.productId))];
+
+      const lockedStocks = await tx.$queryRaw<
+        Array<{ id: string; warehouseId: string; productId: string; quantity: number }>
+      >`
+        SELECT id, "warehouseId", "productId", quantity 
+        FROM "warehouse_stocks" 
+        WHERE "warehouseId" = ANY(${warehouseIds})
+        AND "productId" = ANY(${productIds})
         FOR UPDATE
       `;
 
-      // Verify stock is still sufficient
-      for (const shipment of quote.shipments) {
-        const warehouse = lockedWarehouses.find((w) => w.id === shipment.warehouseId);
-        if (!warehouse || warehouse.stock < shipment.quantity) {
+      // Verify stock is still sufficient for each (warehouse, product) combination
+      for (const stockToLock of stocksToLock) {
+        const lockedStock = lockedStocks.find(
+          (ls) =>
+            ls.warehouseId === stockToLock.warehouseId && ls.productId === stockToLock.productId
+        );
+
+        if (!lockedStock || lockedStock.quantity < stockToLock.quantity) {
           throw new Error(
-            `Insufficient stock at warehouse ${shipment.warehouseName}. ` +
-              `Requested: ${shipment.quantity}, Available: ${warehouse?.stock ?? 0}`
+            `Insufficient stock at warehouse for product. ` +
+              `Requested: ${stockToLock.quantity}, Available: ${lockedStock?.quantity ?? 0}`
           );
         }
       }
@@ -400,34 +515,50 @@ export class OrderService {
         data: {
           orderNumber,
           status,
-          quantity: quote.quantity,
           customerLat: quote.customerLatitude,
           customerLong: quote.customerLongitude,
           subtotalCents: quote.discount.originalAmountCents,
           discountCents: quote.discount.discountAmountCents,
           shippingCents: quote.totalShippingCostCents,
           totalCents: quote.grandTotalCents,
-          shipments: {
-            create: quote.shipments.map((s) => ({
-              warehouseId: s.warehouseId,
-              quantity: s.quantity,
-              distanceKm: s.distanceKm,
-              shippingCents: s.shippingCostCents,
+          items: {
+            create: quote.items.map((itemQuote) => ({
+              productId: itemQuote.productId,
+              quantity: itemQuote.quantity,
+              unitPriceCents: itemQuote.unitPriceCents,
+              subtotalCents: itemQuote.subtotalCents,
+              shipments: {
+                create: itemQuote.shipments.map((s) => ({
+                  warehouseId: s.warehouseId,
+                  quantity: s.quantity,
+                  distanceKm: s.distanceKm,
+                  shippingCents: s.shippingCostCents,
+                })),
+              },
             })),
           },
         },
         include: {
-          shipments: true,
+          items: {
+            include: {
+              shipments: true,
+            },
+          },
         },
       });
 
-      // Update warehouse stock
-      for (const shipment of quote.shipments) {
-        await tx.warehouse.update({
-          where: { id: shipment.warehouseId },
+      // Update warehouse stock for each shipment
+      for (const stockToLock of stocksToLock) {
+        await tx.warehouseStock.update({
+          where: {
+            warehouseId_productId: {
+              warehouseId: stockToLock.warehouseId,
+              productId: stockToLock.productId,
+            },
+          },
           data: {
-            stock: {
-              decrement: shipment.quantity,
+            quantity: {
+              decrement: stockToLock.quantity,
             },
           },
         });
@@ -444,14 +575,25 @@ export class OrderService {
    */
   async getOrder(
     id: string
-  ): Promise<(Order & { shipments: (OrderShipment & { warehouse: { id: string; name: string } })[] }) | null> {
+  ): Promise<
+    | (Order & {
+        items: (OrderItem & {
+          product: Product;
+          shipments: (OrderShipment & { warehouse: Warehouse })[];
+        })[];
+      })
+    | null
+  > {
     return prisma.order.findUnique({
       where: { id },
       include: {
-        shipments: {
+        items: {
           include: {
-            warehouse: {
-              select: { id: true, name: true },
+            product: true,
+            shipments: {
+              include: {
+                warehouse: true,
+              },
             },
           },
         },
@@ -464,14 +606,25 @@ export class OrderService {
    */
   async getOrderByNumber(
     orderNumber: string
-  ): Promise<(Order & { shipments: (OrderShipment & { warehouse: { id: string; name: string } })[] }) | null> {
+  ): Promise<
+    | (Order & {
+        items: (OrderItem & {
+          product: Product;
+          shipments: (OrderShipment & { warehouse: Warehouse })[];
+        })[];
+      })
+    | null
+  > {
     return prisma.order.findUnique({
       where: { orderNumber },
       include: {
-        shipments: {
+        items: {
           include: {
-            warehouse: {
-              select: { id: true, name: true },
+            product: true,
+            shipments: {
+              include: {
+                warehouse: true,
+              },
             },
           },
         },
@@ -482,18 +635,48 @@ export class OrderService {
   /**
    * List all orders
    */
-  async listOrders(): Promise<(Order & { shipments: (OrderShipment & { warehouse: { id: string; name: string } })[] })[]> {
+  async listOrders(): Promise<
+    (Order & {
+      items: (OrderItem & {
+        product: Product;
+        shipments: (OrderShipment & { warehouse: Warehouse })[];
+      })[];
+    })[]
+  > {
     return prisma.order.findMany({
       include: {
-        shipments: {
+        items: {
           include: {
-            warehouse: {
-              select: { id: true, name: true },
+            product: true,
+            shipments: {
+              include: {
+                warehouse: true,
+              },
             },
           },
         },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Get all warehouses with their stock levels
+   */
+  async getWarehousesWithStock(): Promise<
+    (Warehouse & {
+      stocks: (WarehouseStock & { product: Product })[];
+    })[]
+  > {
+    return prisma.warehouse.findMany({
+      include: {
+        stocks: {
+          include: {
+            product: true,
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
     });
   }
 }
@@ -502,4 +685,3 @@ export class OrderService {
  * Singleton instance of the order service
  */
 export const orderService = new OrderService();
-

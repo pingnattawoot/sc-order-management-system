@@ -1,11 +1,13 @@
 /**
  * Shipment GraphQL Types
+ *
+ * Shipments track which warehouses fulfilled order items.
  */
 
 import { builder } from '../builder.js';
 
 /**
- * Shipment detail type (used in quotes)
+ * Shipment detail type (used in quotes - before order is persisted)
  */
 export const ShipmentDetailType = builder.objectRef<{
   warehouseId: string;
@@ -39,10 +41,11 @@ builder.objectType(ShipmentDetailType, {
 
 /**
  * Order shipment type (persisted in database)
+ * Now links to OrderItem instead of Order directly
  */
 export const OrderShipmentType = builder.objectRef<{
   id: string;
-  orderId: string;
+  orderItemId: string;
   warehouseId: string;
   quantity: number;
   distanceKm: { toString(): string };
@@ -51,13 +54,18 @@ export const OrderShipmentType = builder.objectRef<{
   warehouse?: {
     id: string;
     name: string;
+    latitude?: { toString(): string };
+    longitude?: { toString(): string };
   };
 }>('OrderShipment');
 
 builder.objectType(OrderShipmentType, {
-  description: 'A shipment record for an order',
+  description: 'A shipment record for an order item',
   fields: (t) => ({
     id: t.exposeID('id', { description: 'Unique shipment identifier' }),
+    orderItemId: t.exposeID('orderItemId', {
+      description: 'ID of the order item this shipment fulfills',
+    }),
     warehouseId: t.exposeID('warehouseId', {
       description: 'ID of the source warehouse',
     }),
@@ -65,6 +73,18 @@ builder.objectType(OrderShipmentType, {
       description: 'Name of the source warehouse',
       nullable: true,
       resolve: (s) => s.warehouse?.name ?? null,
+    }),
+    warehouseLatitude: t.field({
+      type: 'Decimal',
+      description: 'Warehouse latitude',
+      nullable: true,
+      resolve: (s) => s.warehouse?.latitude?.toString() ?? null,
+    }),
+    warehouseLongitude: t.field({
+      type: 'Decimal',
+      description: 'Warehouse longitude',
+      nullable: true,
+      resolve: (s) => s.warehouse?.longitude?.toString() ?? null,
     }),
     quantity: t.exposeInt('quantity', {
       description: 'Number of units in this shipment',
@@ -84,4 +104,3 @@ builder.objectType(OrderShipmentType, {
     }),
   }),
 });
-

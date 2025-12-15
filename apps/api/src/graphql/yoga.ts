@@ -29,33 +29,66 @@ export function createGraphQLServer(): YogaServerInstance<
 #
 # All monetary values are in CENTS. Frontend should format for display.
 # Example: 15000 cents = $150.00
+#
+# Multi-product, multi-item order support!
 
-# Get all warehouses
+# Get all products
+query GetProducts {
+  products {
+    id
+    sku
+    name
+    priceInCents
+    weightGrams
+  }
+}
+
+# Get all warehouses with stock per product
 query GetWarehouses {
   warehouses {
     id
     name
     latitude
     longitude
-    stock
+    stocks {
+      productId
+      quantity
+      product {
+        name
+        sku
+      }
+    }
   }
-  totalStock
 }
 
-# Verify an order (returns quote without creating order)
+# Verify a multi-item order (returns quote without creating order)
+# Replace PRODUCT_ID with actual product IDs from GetProducts query
 mutation VerifyOrder {
   verifyOrder(input: {
-    quantity: 50
+    items: [
+      { productId: "PRODUCT_ID", quantity: 50 }
+    ]
     latitude: 51.5074
     longitude: -0.1278
   }) {
     isValid
     errorMessage
-    quantity
-    product {
-      name
+    items {
+      productId
+      productName
+      quantity
       unitPriceCents
+      subtotalCents
+      canFulfill
+      shipments {
+        warehouseName
+        quantity
+        distanceKm
+        shippingCostCents
+      }
+      shippingCostCents
     }
+    subtotalCents
     discount {
       discountPercentage
       tierName
@@ -63,40 +96,47 @@ mutation VerifyOrder {
       discountAmountCents
       discountedAmountCents
     }
-    shipments {
-      warehouseName
-      quantity
-      distanceKm
-      shippingCostCents
-    }
     totalShippingCostCents
     shippingValidity {
       isValid
       shippingPercentage
     }
     grandTotalCents
+    totalQuantity
   }
 }
 
 # Submit an order (creates order and updates stock)
+# Replace PRODUCT_ID with actual product IDs from GetProducts query
 mutation SubmitOrder {
   submitOrder(input: {
-    quantity: 10
+    items: [
+      { productId: "PRODUCT_ID", quantity: 10 }
+    ]
     latitude: 51.5074
     longitude: -0.1278
   }) {
     id
     orderNumber
-    quantity
+    totalQuantity
     subtotalCents
     discountCents
     shippingCents
     totalCents
     status
-    shipments {
-      warehouseName
+    items {
+      productId
       quantity
-      shippingCents
+      unitPriceCents
+      product {
+        name
+        sku
+      }
+      shipments {
+        warehouseName
+        quantity
+        shippingCents
+      }
     }
     createdAt
   }
@@ -106,9 +146,15 @@ mutation SubmitOrder {
 query GetOrders {
   orders(limit: 10) {
     orderNumber
-    quantity
+    totalQuantity
     totalCents
     status
+    items {
+      product {
+        name
+      }
+      quantity
+    }
     createdAt
   }
 }
@@ -132,4 +178,3 @@ query GetOrders {
  * GraphQL endpoint path
  */
 export const GRAPHQL_ENDPOINT = '/graphql';
-

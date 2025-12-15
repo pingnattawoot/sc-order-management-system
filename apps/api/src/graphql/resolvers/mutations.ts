@@ -2,6 +2,7 @@
  * GraphQL Mutation Resolvers
  *
  * Implements write operations for order verification and submission.
+ * Supports multi-item orders with different products.
  */
 
 import { GraphQLError } from 'graphql';
@@ -11,14 +12,32 @@ import { OrderType } from '../types/order.js';
 import { orderService } from '../../domain/orders/order.service.js';
 
 /**
- * Input type for order operations
+ * Input type for a single order item
  */
-const OrderInput = builder.inputType('OrderInput', {
-  description: 'Input for creating or verifying an order',
+const OrderItemInput = builder.inputType('OrderItemInput', {
+  description: 'A single item in an order (product + quantity)',
   fields: (t) => ({
+    productId: t.id({
+      required: true,
+      description: 'ID of the product to order',
+    }),
     quantity: t.int({
       required: true,
       description: 'Number of units to order (minimum 1)',
+    }),
+  }),
+});
+
+/**
+ * Input type for order operations (multi-item)
+ */
+const OrderInput = builder.inputType('OrderInput', {
+  description: 'Input for creating or verifying a multi-item order',
+  fields: (t) => ({
+    items: t.field({
+      type: [OrderItemInput],
+      required: true,
+      description: 'Array of items to order',
     }),
     latitude: t.float({
       required: true,
@@ -47,11 +66,13 @@ builder.mutationField('verifyOrder', (t) =>
     },
     resolve: async (_, { input }) => {
       try {
-        const quote = await orderService.verifyOrder(
-          input.quantity,
-          input.latitude,
-          input.longitude
-        );
+        // Convert GraphQL input to service input
+        const items = input.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        }));
+
+        const quote = await orderService.verifyOrder(items, input.latitude, input.longitude);
 
         return quote;
       } catch (error) {
@@ -79,13 +100,15 @@ builder.mutationField('submitOrder', (t) =>
     },
     resolve: async (_, { input }) => {
       try {
-        const result = await orderService.submitOrder(
-          input.quantity,
-          input.latitude,
-          input.longitude
-        );
+        // Convert GraphQL input to service input
+        const items = input.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        }));
 
-        // Fetch the order with shipments and warehouse info for the response
+        const result = await orderService.submitOrder(items, input.latitude, input.longitude);
+
+        // Fetch the order with items, shipments, and warehouse info for the response
         const order = await orderService.getOrder(result.order.id);
 
         if (!order) {
