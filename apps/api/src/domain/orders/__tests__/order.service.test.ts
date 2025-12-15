@@ -1,8 +1,14 @@
 /**
  * Order Service Tests
  *
- * Tests for order verification and submission.
- * Note: These tests require a database connection.
+ * INTEGRATION TESTS: These tests require a database connection.
+ *
+ * SAFETY:
+ * - Tests are skipped if no DATABASE_URL/TEST_DATABASE_URL is set
+ * - The test setup validates URLs to prevent accidental production access
+ * - For maximum safety, use testcontainers (see test-database.ts)
+ *
+ * @see src/__tests__/helpers/test-database.ts for database safety utilities
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
@@ -10,8 +16,11 @@ import { orderService, OrderService } from '../order.service.js';
 import { prisma, disconnectPrisma } from '../../../lib/prisma.js';
 import { LOCATIONS } from '../../../__tests__/helpers/index.js';
 
-// Skip integration tests if no database
-const SKIP_DB_TESTS = !process.env.DATABASE_URL;
+/**
+ * Skip integration tests if no database URL is configured.
+ * URL validation happens in setup.ts before tests run.
+ */
+const SKIP_DB_TESTS = !process.env.TEST_DATABASE_URL;
 
 describe.skipIf(SKIP_DB_TESTS)('OrderService (Integration)', () => {
   let service: OrderService;
@@ -43,7 +52,11 @@ describe.skipIf(SKIP_DB_TESTS)('OrderService (Integration)', () => {
 
   describe('verifyOrder', () => {
     it('should return valid quote for small order', async () => {
-      const quote = await service.verifyOrder(10, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
+      const quote = await service.verifyOrder(
+        10,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
 
       expect(quote.isValid).toBe(true);
       expect(quote.errorMessage).toBeNull();
@@ -54,20 +67,32 @@ describe.skipIf(SKIP_DB_TESTS)('OrderService (Integration)', () => {
 
     it('should apply correct discount for quantity', async () => {
       // 50 units should get 10% discount
-      const quote = await service.verifyOrder(50, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
+      const quote = await service.verifyOrder(
+        50,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
 
       expect(quote.discount.discountPercentage).toBe(10);
     });
 
     it('should return invalid for zero quantity', async () => {
-      const quote = await service.verifyOrder(0, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
+      const quote = await service.verifyOrder(
+        0,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
 
       expect(quote.isValid).toBe(false);
       expect(quote.errorMessage).toContain('at least 1');
     });
 
     it('should return invalid for negative quantity', async () => {
-      const quote = await service.verifyOrder(-5, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
+      const quote = await service.verifyOrder(
+        -5,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
 
       expect(quote.isValid).toBe(false);
     });
@@ -87,7 +112,11 @@ describe.skipIf(SKIP_DB_TESTS)('OrderService (Integration)', () => {
     });
 
     it('should check shipping validity', async () => {
-      const quote = await service.verifyOrder(10, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
+      const quote = await service.verifyOrder(
+        10,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
 
       expect(quote.shippingValidity).toBeDefined();
       expect(quote.shippingValidity.maxAllowedShippingCents).toBeGreaterThan(0);
@@ -96,7 +125,11 @@ describe.skipIf(SKIP_DB_TESTS)('OrderService (Integration)', () => {
 
   describe('submitOrder', () => {
     it('should create order with shipments', async () => {
-      const result = await service.submitOrder(10, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
+      const result = await service.submitOrder(
+        10,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
 
       expect(result.order).toBeDefined();
       expect(result.order.orderNumber).toMatch(/^ORD-/);
@@ -125,8 +158,16 @@ describe.skipIf(SKIP_DB_TESTS)('OrderService (Integration)', () => {
     });
 
     it('should generate unique order numbers', async () => {
-      const result1 = await service.submitOrder(5, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
-      const result2 = await service.submitOrder(5, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
+      const result1 = await service.submitOrder(
+        5,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
+      const result2 = await service.submitOrder(
+        5,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
 
       expect(result1.order.orderNumber).not.toBe(result2.order.orderNumber);
     });
@@ -134,7 +175,11 @@ describe.skipIf(SKIP_DB_TESTS)('OrderService (Integration)', () => {
 
   describe('getOrder', () => {
     it('should retrieve order by ID', async () => {
-      const { order } = await service.submitOrder(10, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
+      const { order } = await service.submitOrder(
+        10,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
 
       const retrieved = await service.getOrder(order.id);
 
@@ -151,7 +196,11 @@ describe.skipIf(SKIP_DB_TESTS)('OrderService (Integration)', () => {
 
   describe('getOrderByNumber', () => {
     it('should retrieve order by order number', async () => {
-      const { order } = await service.submitOrder(10, LOCATIONS.london.latitude, LOCATIONS.london.longitude);
+      const { order } = await service.submitOrder(
+        10,
+        LOCATIONS.london.latitude,
+        LOCATIONS.london.longitude
+      );
 
       const retrieved = await service.getOrderByNumber(order.orderNumber);
 
@@ -182,4 +231,3 @@ describe('OrderService (Unit)', () => {
     expect(orderService).toBeInstanceOf(OrderService);
   });
 });
-

@@ -6,4 +6,4 @@
 
 export * from './factories.js';
 export * from './assertions.js';
-
+export * from './test-database.js';

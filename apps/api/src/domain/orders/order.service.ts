@@ -8,24 +8,11 @@
  */
 
 import { nanoid } from 'nanoid';
-import { Decimal as DecimalJS } from 'decimal.js';
 import { prisma } from '../../lib/prisma.js';
 import { WarehouseOptimizer, WarehouseData } from '../logistics/warehouse-optimizer.js';
 import { calculateDiscount, DiscountResult } from '../pricing/discount.js';
 import { checkShippingValidity, ShippingValidityResult } from '../pricing/shipping.js';
 import type { Order, OrderShipment, OrderStatus, Product, Warehouse } from '../../generated/prisma/client.js';
-
-/**
- * Convert Prisma Decimal to number
- * Prisma returns Decimal as an object with toString() method
- */
-function toNumber(value: unknown): number {
-  if (typeof value === 'number') return value;
-  if (value && typeof value === 'object' && 'toString' in value) {
-    return new DecimalJS(value.toString()).toNumber();
-  }
-  return Number(value);
-}
 
 /**
  * Shipment details in a quote/order
@@ -102,7 +89,12 @@ export class OrderService {
   }
 
   /**
-   * Normalized product type with number types
+   * Map Prisma Product to domain interface
+   *
+   * Why this exists: Interface mapping, NOT type conversion.
+   * - Prisma schema uses `priceInCents` (persistence layer naming)
+   * - Domain/Quote interface uses `unitPriceCents` (business layer naming)
+   * - Decouples domain logic from Prisma model shape
    */
   private normalizeProduct(product: Product): {
     id: string;
@@ -113,7 +105,7 @@ export class OrderService {
     return {
       id: product.id,
       name: product.name,
-      unitPriceCents: product.priceInCents,
+      unitPriceCents: product.priceInCents, // Rename: priceInCents → unitPriceCents
       weightGrams: product.weightGrams,
     };
   }
@@ -141,13 +133,14 @@ export class OrderService {
 
   /**
    * Convert Prisma warehouses to optimizer format
+   * Note: Prisma Decimal has .toNumber() method built-in (based on decimal.js)
    */
   private toWarehouseData(warehouses: Warehouse[], weightGrams: number): WarehouseData[] {
     return warehouses.map((wh) => ({
       id: wh.id,
       name: wh.name,
-      latitude: toNumber(wh.latitude),
-      longitude: toNumber(wh.longitude),
+      latitude: wh.latitude.toNumber(),
+      longitude: wh.longitude.toNumber(),
       stock: wh.stock,
       weightGrams,
     }));

@@ -197,10 +197,7 @@ describe('WarehouseOptimizer', () => {
           warehouses
         );
 
-        const sumOfShipments = result.shipments.reduce(
-          (sum, s) => sum + s.shippingCostCents,
-          0
-        );
+        const sumOfShipments = result.shipments.reduce((sum, s) => sum + s.shippingCostCents, 0);
 
         expect(result.totalShippingCostCents).toBe(sumOfShipments);
       });
@@ -217,15 +214,11 @@ describe('WarehouseOptimizer', () => {
         );
 
         // London warehouse should have very small distance
-        const londonShipment = result.shipments.find(
-          (s) => s.warehouseId === 'wh_london'
-        );
+        const londonShipment = result.shipments.find((s) => s.warehouseId === 'wh_london');
         expect(londonShipment!.distanceKm).toBeLessThan(5);
 
         // Manchester should be ~260km from London
-        const manchesterShipment = result.shipments.find(
-          (s) => s.warehouseId === 'wh_manchester'
-        );
+        const manchesterShipment = result.shipments.find((s) => s.warehouseId === 'wh_manchester');
         expect(manchesterShipment!.distanceKm).toBeGreaterThan(200);
         expect(manchesterShipment!.distanceKm).toBeLessThan(350);
       });
@@ -311,4 +304,3 @@ describe('WarehouseOptimizer', () => {
     });
   });
 });
-
