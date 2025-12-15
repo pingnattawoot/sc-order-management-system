@@ -18,8 +18,7 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:generate": "prisma generate",
-    "graphql:generate": "tsx scripts/generate-schema.ts"
+    "db:generate": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

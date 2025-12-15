@@ -17,4 +17,3 @@ import './resolvers/index.js';
  * Build and export the GraphQL schema
  */
 export const schema = builder.toSchema();
-
