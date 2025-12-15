@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
+    "types": ["vitest/globals"],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -27,7 +28,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true
   },
-  "include": ["src/**/*", "prisma/seed.ts", "scripts/**/*"],
+  "include": ["src/**/*", "prisma/seed.ts", "scripts/**/*", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]
 }
 

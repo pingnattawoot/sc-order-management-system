@@ -97,22 +97,26 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
-## Phase 4: Testing Setup
+## Phase 4: Testing Setup ✅
 
 > Setup testing infrastructure before writing domain logic.
 
-### 4.1 Vitest Setup
+### 4.1 Vitest Setup ✅
 
-- [ ] Create `vitest.config.ts`
-- [ ] Configure test environment
-- [ ] Add test helpers
-- [ ] **COMMIT:** `chore(api): setup vitest testing framework`
+- [x] Create `vitest.config.ts`
+- [x] Configure test environment (node, globals, coverage)
+- [x] Add setup file `src/__tests__/setup.ts`
+- [x] Add vitest/globals types to tsconfig.json
+- [x] _(consolidated with 4.2 commit)_
 
-### 4.2 Test Helpers
+### 4.2 Test Helpers ✅
 
-- [ ] Create test utilities
-- [ ] Add mock factories
-- [ ] **COMMIT:** `chore(api): add test helpers`
+- [x] Create `src/__tests__/helpers/factories.ts` (Product, Warehouse, Coordinate factories)
+- [x] Create `src/__tests__/helpers/assertions.ts` (expectCloseTo, expectCents, etc.)
+- [x] Create `src/__tests__/helpers/index.ts` (re-exports)
+- [x] Add well-known LOCATIONS constant for testing
+- [x] Create verification test `setup.test.ts` (8 tests passing)
+- [x] **COMMIT:** `chore(api): setup vitest testing framework with helpers`
 
 ---
 
@@ -357,11 +361,11 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 | 1. Infrastructure | ✅ Complete    | 3/3      |
 | 2. Database       | ✅ Complete    | 1/1      |
 | 3. Server Setup   | ✅ Complete    | 1/1      |
-| 4. Testing Setup  | ⬜ Not Started | 0/2      |
+| 4. Testing Setup  | ✅ Complete    | 1/1      |
 | 5. Domain Logic   | ⬜ Not Started | 0/5      |
 | 6. GraphQL API    | ⬜ Not Started | 0/6      |
 | 7. Frontend       | ⬜ Not Started | 0/12     |
 | 8. DevOps         | ⬜ Not Started | 0/5      |
-| **Total**         | **14%**        | **5/35** |
+| **Total**         | **18%**        | **6/34** |
 
 Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete

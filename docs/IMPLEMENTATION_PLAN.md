@@ -147,24 +147,37 @@ This document outlines the step-by-step implementation plan for building a produ
 
 ---
 
-## Phase 4: Testing Setup
+## Phase 4: Testing Setup ✅
 
 > **Why Phase 4?** Setup testing infrastructure before writing domain logic so we can test each function as we implement it.
 
-### 4.1 Setup Vitest
+### 4.1 Setup Vitest ✅
 
-- [ ] Create `apps/api/vitest.config.ts`
-- [ ] Configure test environment
-- [ ] Add test utilities and helpers
-- [ ] Setup test database configuration
-- [ ] **COMMIT:** "chore(api): setup vitest testing framework"
+- [x] Create `apps/api/vitest.config.ts`
+  - Node environment, globals enabled, v8 coverage
+  - Include `src/**/*.test.ts` pattern
+  - Single fork for database test isolation
+- [x] Add vitest/globals types to `tsconfig.json`
+- [x] Create `apps/api/src/__tests__/setup.ts` (test setup file)
+- [x] _(consolidated with 4.2 commit)_
 
-### 4.2 Create Test Helpers
+### 4.2 Create Test Helpers ✅
 
-- [ ] Create `apps/api/src/__tests__/helpers/`
-- [ ] Add database setup/teardown utilities
-- [ ] Add mock factories for test data
-- [ ] **COMMIT:** "chore(api): add test helpers"
+- [x] Create `apps/api/src/__tests__/helpers/factories.ts`:
+  - `createTestProduct()` - product factory with defaults
+  - `createTestWarehouse()` - warehouse factory with defaults
+  - `createTestWarehouses()` - multiple warehouses (London, Manchester, Edinburgh)
+  - `createTestCoordinate()` - coordinate factory
+  - `createTestOrderInput()` - order input factory
+  - `LOCATIONS` - well-known locations (London, NY, LA, Paris, HK, etc.)
+- [x] Create `apps/api/src/__tests__/helpers/assertions.ts`:
+  - `expectCloseTo()` - floating-point comparison
+  - `expectCents()` - monetary value with 1 cent tolerance
+  - `expectDistanceKm()` - distance comparison with km tolerance
+  - `expectValidId()` - ID format validation
+  - `expectRecentDate()` - recent date assertion
+- [x] Create verification test `setup.test.ts` (8 tests passing)
+- [x] **COMMIT:** "chore(api): setup vitest testing framework with helpers"
 
 ---
 
