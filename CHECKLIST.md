@@ -212,80 +212,71 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ## Phase 7: React Frontend
 
+> Tab-based UI: New Order | Orders History | Stock Management
+
 ### 7.1 Vite Setup
 
-- [ ] Create `apps/web` with Vite
-- [ ] Install deps (apollo, leaflet)
+- [ ] Create `apps/web` with Vite + TypeScript
+- [ ] Install deps (apollo, leaflet, react-leaflet)
 - [ ] **COMMIT:** `chore(web): initialize vite react project`
 
-### 7.2 shadcn/ui
+### 7.2 Tailwind & shadcn/ui
 
-- [ ] Setup Tailwind
-- [ ] Init shadcn/ui
-- [ ] Add components (Button, Input, Card, etc.)
-- [ ] **COMMIT:** `chore(web): setup shadcn/ui`
+- [ ] Setup Tailwind CSS v4
+- [ ] Init shadcn/ui (New York style)
+- [ ] Add components: Button, Input, Card, Badge, Sheet/Dialog, Tabs, Table, Sonner
+- [ ] **COMMIT:** `chore(web): setup tailwind and shadcn/ui`
 
-### 7.3 GraphQL Codegen
+### 7.3 Apollo Client
 
-- [ ] Install codegen
-- [ ] Create `codegen.yml`
-- [ ] Generate hooks
-- [ ] **COMMIT:** `chore(web): setup graphql codegen`
+- [ ] Create `lib/apollo.ts` with endpoint
+- [ ] Setup ApolloProvider in main.tsx
+- [ ] Create GraphQL queries/mutations (warehouses, orders, verify, submit)
+- [ ] **COMMIT:** `chore(web): setup apollo client with queries`
 
-### 7.4 Apollo Client
+### 7.4 Shared Map Components
 
-- [ ] Create `lib/apollo.ts`
-- [ ] Setup ApolloProvider
-- [ ] **COMMIT:** `chore(web): setup apollo client`
+- [ ] `Map/WarehouseMap.tsx` - Leaflet map with fit bounds
+- [ ] `Map/WarehouseMarker.tsx` - Custom marker with popup
+- [ ] `Map/CustomerMarker.tsx` - Destination marker
+- [ ] Configure Leaflet CSS
+- [ ] **COMMIT:** `feat(web): add shared map components`
 
-### 7.5 Layout Components
+### 7.5 Tab 1: New Order
 
-- [ ] Header, Container
-- [ ] **COMMIT:** `feat(web): add layout components`
+- [ ] Map with all warehouses (fit bounds)
+- [ ] Click map → Sheet/Dialog with quantity input
+- [ ] Verify order → Show results on map
+- [ ] Highlight source warehouses
+- [ ] Show pricing breakdown + validity
+- [ ] Submit button (if valid)
+- [ ] Success toast with order number
+- [ ] **COMMIT:** `feat(web): implement new order tab with map`
 
-### 7.6 Map Component
+### 7.6 Tab 2: Order History
 
-- [ ] OrderMap with Leaflet
-- [ ] WarehouseMarker, CustomerMarker
-- [ ] Click-to-select functionality
-- [ ] **COMMIT:** `feat(web): add leaflet map`
+- [ ] Table listing all orders (newest first)
+- [ ] Click order → Show detail with map
+- [ ] Map shows customer + source warehouses
+- [ ] Full pricing and shipment breakdown
+- [ ] **COMMIT:** `feat(web): implement order history tab`
 
-### 7.7 Order Form
+### 7.7 Tab 3: Stock Management
 
-- [ ] OrderForm, QuantityInput, CoordinateInput
-- [ ] Form validation
-- [ ] **COMMIT:** `feat(web): add order form`
+- [ ] Warehouse table with stock levels
+- [ ] Stock indicators (progress bar/colors)
+- [ ] Map view with stock-based markers
+- [ ] Total global stock summary
+- [ ] **COMMIT:** `feat(web): implement stock management tab`
 
-### 7.8 Order Summary
+### 7.8 Polish & Integration
 
-- [ ] Display pricing breakdown
-- [ ] Show validity status
-- [ ] **COMMIT:** `feat(web): add order summary`
-
-### 7.9 Warehouse List
-
-- [ ] Display warehouses with stock
-- [ ] Show distances
-- [ ] **COMMIT:** `feat(web): add warehouse list`
-
-### 7.10 Order Page
-
-- [ ] Combine map, form, summary
-- [ ] Verify and submit flows
-- [ ] **COMMIT:** `feat(web): implement main order page`
-
-### 7.11 Order History
-
-- [ ] List all orders
-- [ ] Order details
-- [ ] **COMMIT:** `feat(web): add order history page`
-
-### 7.12 Navigation & Polish
-
-- [ ] Routing
-- [ ] Toasts
+- [ ] Main App.tsx with Tabs
 - [ ] Responsive design
-- [ ] **COMMIT:** `feat(web): add navigation and polish`
+- [ ] Loading states and skeletons
+- [ ] Error boundaries
+- [ ] Style refinements
+- [ ] **COMMIT:** `feat(web): polish ui and finalize frontend`
 
 ---
 
@@ -369,8 +360,8 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 | 4. Testing Setup  | ✅ Complete    | 1/1      |
 | 5. Domain Logic   | ✅ Complete    | 1/1      |
 | 6. GraphQL API    | ✅ Complete    | 1/1      |
-| 7. Frontend       | ⬜ Not Started | 0/12     |
+| 7. Frontend       | 🟡 In Progress | 0/8      |
 | 8. DevOps         | ⬜ Not Started | 0/5      |
-| **Total**         | **33%**        | **8/25** |
+| **Total**         | **38%**        | **8/21** |
 
 Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete

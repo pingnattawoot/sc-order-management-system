@@ -295,112 +295,118 @@ This document outlines the step-by-step implementation plan for building a produ
 
 ## Phase 7: React Frontend
 
+> **UI Design:** Tab-based interface with 3 main tabs: New Order, Orders History, and Stock Management.
+
 ### 7.1 Initialize Vite React Project
 
 - [ ] Create `apps/web` with `pnpm create vite`
-- [ ] Configure TypeScript
+- [ ] Configure TypeScript with strict mode
 - [ ] Install dependencies:
   - `@apollo/client` - GraphQL client
   - `graphql` - GraphQL core
-  - `react-leaflet`, `leaflet` - Map
+  - `react-leaflet`, `leaflet`, `@types/leaflet` - Interactive map
 - [ ] **COMMIT:** "chore(web): initialize vite react project"
 
-### 7.2 Setup shadcn/ui
+### 7.2 Setup Tailwind & shadcn/ui
 
-- [ ] Install and configure Tailwind CSS
-- [ ] Initialize shadcn/ui
+- [ ] Install and configure Tailwind CSS v4
+- [ ] Initialize shadcn/ui with New York style
 - [ ] Add essential components:
-  - Button, Input, Card, Label
-  - Toast, Alert
-  - Table
-- [ ] **COMMIT:** "chore(web): setup shadcn/ui and tailwind"
+  - `Button`, `Input`, `Label` - Form controls
+  - `Card`, `Badge` - Display components
+  - `Sheet` or `Dialog` - Order form modal
+  - `Tabs` - Main navigation
+  - `Table` - Data display
+  - `Sonner` (toast) - Notifications
+- [ ] **COMMIT:** "chore(web): setup tailwind and shadcn/ui"
 
-### 7.3 GraphQL Codegen for Frontend
-
-- [ ] Install `@graphql-codegen/cli` and plugins
-- [ ] Create `codegen.yml` configuration
-- [ ] Generate typed hooks from schema
-- [ ] Add codegen script to package.json
-- [ ] **COMMIT:** "chore(web): setup graphql codegen"
-
-### 7.4 Setup Apollo Client
+### 7.3 Setup Apollo Client
 
 - [ ] Create `apps/web/src/lib/apollo.ts`
-- [ ] Configure Apollo Client with API endpoint
+- [ ] Configure Apollo Client with `http://localhost:4000/graphql`
 - [ ] Setup ApolloProvider in main.tsx
-- [ ] **COMMIT:** "chore(web): setup apollo client"
+- [ ] Create GraphQL queries and mutations:
+  - `GET_WAREHOUSES` - Fetch all warehouses with stock
+  - `GET_ORDERS` - Fetch order history
+  - `VERIFY_ORDER` - Validate order before submission
+  - `SUBMIT_ORDER` - Place confirmed order
+- [ ] **COMMIT:** "chore(web): setup apollo client with queries"
 
-### 7.5 Create Layout Components
+### 7.4 Create Shared Components
 
-- [ ] Create `apps/web/src/components/layout/`:
-  - `Header.tsx` - App header with logo
-  - `Container.tsx` - Main content container
-- [ ] Create base page layout
-- [ ] **COMMIT:** "feat(web): add layout components"
+- [ ] Create `apps/web/src/components/`:
+  - `Map/WarehouseMap.tsx` - Reusable Leaflet map with warehouse markers
+  - `Map/WarehouseMarker.tsx` - Custom marker with popup (name, stock, distance)
+  - `Map/CustomerMarker.tsx` - Destination marker
+  - `Layout/AppHeader.tsx` - App title and branding
+- [ ] Configure Leaflet CSS imports
+- [ ] **COMMIT:** "feat(web): add shared map components"
 
-### 7.6 Create Map Component
+### 7.5 Implement Tab 1: New Order
 
-- [ ] Create `apps/web/src/components/map/`:
-  - `OrderMap.tsx` - Leaflet map component
-  - `WarehouseMarker.tsx` - Warehouse markers
-  - `CustomerMarker.tsx` - Customer location marker
-- [ ] Add click-to-select location functionality
-- [ ] Display warehouse locations with stock info
-- [ ] **COMMIT:** "feat(web): add interactive leaflet map"
+- [ ] Create `apps/web/src/components/tabs/NewOrderTab.tsx`
+- [ ] **Map Features:**
+  - Display all warehouses with markers (fit bounds on load)
+  - Markers show warehouse name and current stock
+  - Click anywhere on map to select delivery destination
+- [ ] **Order Sheet/Dialog:**
+  - Triggered when user clicks destination on map
+  - Shows selected coordinates (lat/lng)
+  - Quantity input with +/- buttons
+  - "Verify Order" button
+- [ ] **Verification Results:**
+  - Highlight warehouses that will fulfill the order (different color/icon)
+  - Show pricing breakdown (subtotal, discount, shipping, total)
+  - Show validity status (valid/invalid with reason)
+  - If valid: Show "Confirm & Submit Order" button
+  - If invalid: Show error message with details
+- [ ] **Success Flow:**
+  - Submit order mutation
+  - Show success toast with order number
+  - Reset form state
+- [ ] **COMMIT:** "feat(web): implement new order tab with map"
 
-### 7.7 Create Order Form Component
+### 7.6 Implement Tab 2: Order History
 
-- [ ] Create `apps/web/src/components/order/`:
-  - `OrderForm.tsx` - Main order form
-  - `QuantityInput.tsx` - Quantity selector
-  - `CoordinateInput.tsx` - Lat/Long inputs
-  - `OrderQuote.tsx` - Display quote results
-- [ ] Add form validation
-- [ ] **COMMIT:** "feat(web): add order form components"
+- [ ] Create `apps/web/src/components/tabs/OrdersTab.tsx`
+- [ ] **Order List:**
+  - Table/cards showing all orders (newest first)
+  - Display: Order #, Date, Quantity, Total, Status
+  - Click row to expand/select
+- [ ] **Order Detail View:**
+  - Show map with customer location and source warehouses
+  - Lines connecting warehouses to customer
+  - Full pricing breakdown
+  - Shipment details (warehouse, quantity, distance, cost)
+- [ ] **COMMIT:** "feat(web): implement order history tab"
 
-### 7.8 Create Order Summary Component
+### 7.7 Implement Tab 3: Stock Management
 
-- [ ] Create `apps/web/src/components/order/OrderSummary.tsx`
-- [ ] Display:
-  - Product details
-  - Quantity and subtotal
-  - Discount breakdown
-  - Shipping cost breakdown (per warehouse)
-  - Total price
-  - Validity status
-- [ ] **COMMIT:** "feat(web): add order summary component"
+- [ ] Create `apps/web/src/components/tabs/StockTab.tsx`
+- [ ] **Warehouse Table:**
+  - List all warehouses
+  - Columns: Name, Location (City), Coordinates, Current Stock
+  - Visual stock indicators (progress bar or color coding)
+- [ ] **Map View:**
+  - Same map showing all warehouses
+  - Marker size or color based on stock level
+  - Popup shows detailed stock info
+- [ ] **Summary Stats:**
+  - Total global stock
+  - Stock distribution across warehouses
+- [ ] **COMMIT:** "feat(web): implement stock management tab"
 
-### 7.9 Create Warehouse List Component
+### 7.8 Polish & Final Integration
 
-- [ ] Create `apps/web/src/components/warehouse/WarehouseList.tsx`
-- [ ] Display all warehouses with current stock
-- [ ] Show distance from selected location
-- [ ] Highlight warehouses being used for shipment
-- [ ] **COMMIT:** "feat(web): add warehouse list component"
-
-### 7.10 Implement Main Order Page
-
-- [ ] Create `apps/web/src/pages/OrderPage.tsx`
-- [ ] Combine map, form, and summary components
-- [ ] Implement verify order flow
-- [ ] Implement submit order flow
-- [ ] Add loading and error states
-- [ ] **COMMIT:** "feat(web): implement main order page"
-
-### 7.11 Create Order History Page
-
-- [ ] Create `apps/web/src/pages/OrdersPage.tsx`
-- [ ] List all submitted orders
-- [ ] Show order details with shipment breakdown
-- [ ] **COMMIT:** "feat(web): add order history page"
-
-### 7.12 Add Navigation & Polish
-
-- [ ] Implement routing (react-router-dom)
-- [ ] Add navigation between pages
-- [ ] Add toast notifications for success/error
-- [ ] Ensure responsive design
-- [ ] **COMMIT:** "feat(web): add navigation and polish ui"
+- [ ] Create main `App.tsx` with Tabs component
+- [ ] Add responsive design (mobile-friendly)
+- [ ] Add loading states and skeletons
+- [ ] Add error boundaries and error states
+- [ ] Style refinements:
+  - Consistent color scheme
+  - Hover states and transitions
+  - Map styling (custom tiles if needed)
+- [ ] **COMMIT:** "feat(web): polish ui and finalize frontend"
 
 ---
 
