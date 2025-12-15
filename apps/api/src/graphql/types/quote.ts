@@ -42,13 +42,15 @@ builder.objectType(DiscountResultType, {
 
 /**
  * Shipping validity result type
+ * Matches domain ShippingValidityResult from pricing/shipping.ts
  */
 export const ShippingValidityType = builder.objectRef<{
   isValid: boolean;
-  actualShippingCents: number;
-  maxAllowedShippingCents: number;
+  shippingCostCents: number;
+  orderAmountCents: number;
   shippingPercentage: number;
-  maxPercentage: number;
+  maxAllowedShippingCents: number;
+  overLimitCents: number;
 }>('ShippingValidity');
 
 builder.objectType(ShippingValidityType, {
@@ -57,19 +59,21 @@ builder.objectType(ShippingValidityType, {
     isValid: t.exposeBoolean('isValid', {
       description: 'Whether shipping cost is within 15% of discounted subtotal',
     }),
-    actualShippingCents: t.exposeInt('actualShippingCents', {
+    shippingCostCents: t.exposeInt('shippingCostCents', {
       description: 'Actual shipping cost in cents',
     }),
-    maxAllowedShippingCents: t.exposeInt('maxAllowedShippingCents', {
-      description: 'Maximum allowed shipping (15% of discounted subtotal)',
+    orderAmountCents: t.exposeInt('orderAmountCents', {
+      description: 'Order amount after discount in cents',
     }),
     shippingPercentage: t.float({
       description: 'Actual shipping as percentage of discounted subtotal',
       resolve: (s) => s.shippingPercentage,
     }),
-    maxPercentage: t.float({
-      description: 'Maximum allowed percentage (15)',
-      resolve: (s) => s.maxPercentage,
+    maxAllowedShippingCents: t.exposeInt('maxAllowedShippingCents', {
+      description: 'Maximum allowed shipping (15% of discounted subtotal)',
+    }),
+    overLimitCents: t.exposeInt('overLimitCents', {
+      description: 'Amount over limit in cents (0 if within limit)',
     }),
   }),
 });
@@ -130,10 +134,11 @@ export const OrderQuoteType = builder.objectRef<{
   totalShippingCostCents: number;
   shippingValidity: {
     isValid: boolean;
-    actualShippingCents: number;
-    maxAllowedShippingCents: number;
+    shippingCostCents: number;
+    orderAmountCents: number;
     shippingPercentage: number;
-    maxPercentage: number;
+    maxAllowedShippingCents: number;
+    overLimitCents: number;
   };
   grandTotalCents: number;
 }>('OrderQuote');

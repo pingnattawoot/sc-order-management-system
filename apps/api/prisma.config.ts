@@ -19,8 +19,8 @@ export default defineConfig({
   },
 
   // Datasource configuration
-  // Using process.env directly to allow running `prisma generate` without DATABASE_URL
+  // Using Prisma's env() helper to read DATABASE_URL from .env
   datasource: {
-    url: process.env.DATABASE_URL!,
+    url: env('DATABASE_URL'),
   },
 });

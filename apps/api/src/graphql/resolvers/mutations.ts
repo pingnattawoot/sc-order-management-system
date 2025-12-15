@@ -8,10 +8,7 @@ import { GraphQLError } from 'graphql';
 import { builder } from '../builder.js';
 import { OrderQuoteType } from '../types/quote.js';
 import { OrderType } from '../types/order.js';
-import { OrderService } from '../../domain/orders/order.service.js';
-
-// Singleton order service instance
-const orderService = new OrderService();
+import { orderService } from '../../domain/orders/order.service.js';
 
 /**
  * Input type for order operations
@@ -50,7 +47,11 @@ builder.mutationField('verifyOrder', (t) =>
     },
     resolve: async (_, { input }) => {
       try {
-        const quote = await orderService.verifyOrder(input.quantity, input.latitude, input.longitude);
+        const quote = await orderService.verifyOrder(
+          input.quantity,
+          input.latitude,
+          input.longitude
+        );
 
         return quote;
       } catch (error) {
@@ -78,7 +79,11 @@ builder.mutationField('submitOrder', (t) =>
     },
     resolve: async (_, { input }) => {
       try {
-        const result = await orderService.submitOrder(input.quantity, input.latitude, input.longitude);
+        const result = await orderService.submitOrder(
+          input.quantity,
+          input.latitude,
+          input.longitude
+        );
 
         // Fetch the order with shipments and warehouse info for the response
         const order = await orderService.getOrder(result.order.id);
@@ -117,4 +122,3 @@ builder.mutationField('submitOrder', (t) =>
     },
   })
 );
-
