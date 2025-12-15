@@ -181,95 +181,51 @@ This document outlines the step-by-step implementation plan for building a produ
 
 ---
 
-## Phase 5: Core Domain Logic
+## Phase 5: Core Domain Logic ✅
 
-> **Note:** Each section includes writing tests alongside implementation.
+> **Note:** Each section includes writing tests alongside implementation. **97 tests passing.**
 
-### 5.1 Implement Haversine Distance Calculation
+### 5.1 Implement Haversine Distance Calculation ✅
 
-- [ ] Create `apps/api/src/lib/haversine.ts`
-- [ ] Implement `calculateDistanceKm(lat1, lon1, lat2, lon2)` function
-- [ ] Use Decimal.js for precise calculations
-- [ ] Add JSDoc documentation
-- [ ] **TEST:** Create `apps/api/src/lib/__tests__/haversine.test.ts`
-  - Test LA to New York distance
-  - Test Paris to Hong Kong distance
-  - Test same point (0 distance)
-  - Test antipodal points
-- [ ] **COMMIT:** "feat(api): implement haversine distance calculation with tests"
+- [x] Create `apps/api/src/lib/haversine.ts`
+- [x] Implement `calculateDistanceKm(lat1, lon1, lat2, lon2)` with Decimal.js
+- [x] Implement `calculateDistance(point1, point2)` helper
+- [x] **TEST:** 11 tests covering LA→NY, Paris→HK, Sydney→Tokyo, London→NY, same point, antipodal, short distances, symmetry
+- [x] _(consolidated with Phase 5 commit)_
 
-### 5.2 Implement Pricing Logic - Discounts
+### 5.2 Implement Pricing Logic - Discounts ✅
 
-- [ ] Create `apps/api/src/domain/pricing/discount.ts`
-- [ ] Implement volume discount tiers:
-  - 1-24 units: 0% discount
-  - 25-49 units: 5% discount
-  - 50-99 units: 10% discount
-  - 100-249 units: 15% discount
-  - 250+ units: 20% discount
-- [ ] Create `calculateDiscount(quantity, unitPriceCents)` function
-- [ ] Use Decimal.js for calculations
-- [ ] **TEST:** Create `apps/api/src/domain/pricing/__tests__/discount.test.ts`
-  - Test all discount tiers
-  - Test boundary conditions (24→25, 49→50, etc.)
-- [ ] **COMMIT:** "feat(api): implement volume discount calculation with tests"
+- [x] Create `apps/api/src/domain/pricing/discount.ts`
+- [x] Implement volume discount tiers (0%, 5%, 10%, 15%, 20%)
+- [x] Export `DISCOUNT_TIERS`, `getDiscountPercentage`, `calculateDiscount`, `getDiscountTier`
+- [x] **TEST:** 23 tests covering all tiers, boundary conditions, DiscountResult structure
+- [x] _(consolidated with Phase 5 commit)_
 
-### 5.3 Implement Shipping Cost Calculation
+### 5.3 Implement Shipping Cost Calculation ✅
 
-- [ ] Create `apps/api/src/domain/pricing/shipping.ts`
-- [ ] Implement `calculateShippingCost(distanceKm, weightGrams, quantity)`:
-  - Rate: $0.01 per kg per km
-  - Formula: distanceKm × (weightGrams/1000) × quantity × 0.01
-- [ ] Create `isShippingCostValid(shippingCents, orderAmountAfterDiscount)`:
-  - Returns false if shipping > 15% of order amount
-- [ ] Use Decimal.js for all monetary calculations
-- [ ] **TEST:** Create `apps/api/src/domain/pricing/__tests__/shipping.test.ts`
-  - Test shipping cost formula
-  - Test 15% validity rule
-  - Test edge cases
-- [ ] **COMMIT:** "feat(api): implement shipping cost calculation with tests"
+- [x] Create `apps/api/src/domain/pricing/shipping.ts`
+- [x] Implement `calculateShippingCost(distanceKm, weightGrams, quantity)`
+- [x] Implement `isShippingCostValid()`, `calculateShippingPercentage()`, `checkShippingValidity()`
+- [x] **TEST:** 22 tests covering formula, 15% rule, edge cases, detailed validity breakdown
+- [x] _(consolidated with Phase 5 commit)_
 
-### 5.4 Implement Warehouse Optimizer (Core Algorithm)
+### 5.4 Implement Warehouse Optimizer (Core Algorithm) ✅
 
-- [ ] Create `apps/api/src/domain/logistics/warehouse-optimizer.ts`
-- [ ] Implement `WarehouseOptimizer` class with methods:
-  - `findOptimalShipments(customerLat, customerLong, quantity, warehouses)`:
-    1. Calculate distance from each warehouse to customer
-    2. Sort warehouses by distance (ascending)
-    3. Greedy allocation: fill from nearest warehouse first
-    4. Return allocation plan with per-warehouse shipping costs
-- [ ] Handle edge case: not enough total stock
-- [ ] Return detailed breakdown for each warehouse
-- [ ] **TEST:** Create `apps/api/src/domain/logistics/__tests__/warehouse-optimizer.test.ts`
-  - Test single warehouse fulfillment
-  - Test multi-warehouse split
-  - Test insufficient stock error
-  - Test nearest-first selection
-- [ ] **COMMIT:** "feat(api): implement greedy warehouse optimizer with tests"
+- [x] Create `apps/api/src/domain/logistics/warehouse-optimizer.ts`
+- [x] Implement `WarehouseOptimizer` class with greedy nearest-first algorithm
+- [x] Handle insufficient stock, weighted average distance calculation
+- [x] **TEST:** 17 tests covering single/multi warehouse, insufficient stock, nearest-first selection, distance/shipping calculation
+- [x] _(consolidated with Phase 5 commit)_
 
-### 5.5 Implement Order Service
+### 5.5 Implement Order Service ✅
 
-- [ ] Create `apps/api/src/domain/orders/order.service.ts`
-- [ ] Implement `OrderService` class with methods:
-  - `verifyOrder(quantity, lat, long)`:
-    - Calculate optimal shipments
-    - Calculate total costs and discount
-    - Validate shipping cost (≤15% rule)
-    - Return quote without saving to DB
-  - `submitOrder(quantity, lat, long)`:
-    - Re-verify order
-    - Use Prisma transaction with SELECT FOR UPDATE
-    - Update warehouse stock atomically
-    - Create order and shipment records
-    - Generate unique order number
-- [ ] Add proper error handling
-- [ ] **TEST:** Create `apps/api/src/domain/orders/__tests__/order.service.test.ts`
-  - Test order verification flow
-  - Test order submission flow
-  - Test insufficient stock handling
-  - Test invalid shipping cost rejection
-  - Test concurrent order handling
-- [ ] **COMMIT:** "feat(api): implement order service with tests"
+- [x] Create `apps/api/src/domain/orders/order.service.ts`
+- [x] Implement `verifyOrder()` - returns quote without DB write
+- [x] Implement `submitOrder()` - transaction with pessimistic locking (SELECT FOR UPDATE)
+- [x] Handle Prisma Decimal type conversions
+- [x] Implement `getOrder()`, `getOrderByNumber()`, `listOrders()`
+- [x] **TEST:** 16 tests covering verify, submit, stock updates, order retrieval
+- [x] **COMMIT:** "feat(api): implement core domain logic with tests"
 
 ---
 

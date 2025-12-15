@@ -120,47 +120,49 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ---
 
-## Phase 5: Core Domain Logic
+## Phase 5: Core Domain Logic ✅
 
 > Each feature includes tests alongside implementation.
 
-### 5.1 Haversine Distance
+### 5.1 Haversine Distance ✅
 
-- [ ] Create `lib/haversine.ts`
-- [ ] Implement `calculateDistanceKm()` with Decimal.js
-- [ ] **TEST:** Add haversine tests (LA→NY, Paris→HK, edge cases)
-- [ ] **COMMIT:** `feat(api): implement haversine distance with tests`
+- [x] Create `lib/haversine.ts`
+- [x] Implement `calculateDistanceKm()` with Decimal.js
+- [x] **TEST:** 11 tests (LA→NY, Paris→HK, Sydney→Tokyo, antipodal, symmetry, etc.)
+- [x] _(consolidated with Phase 5 commit)_
 
-### 5.2 Discount Logic
+### 5.2 Discount Logic ✅
 
-- [ ] Create `domain/pricing/discount.ts`
-- [ ] Implement volume discount tiers (5%, 10%, 15%, 20%)
-- [ ] **TEST:** Add discount tests (all tiers, boundaries)
-- [ ] **COMMIT:** `feat(api): implement volume discount with tests`
+- [x] Create `domain/pricing/discount.ts`
+- [x] Implement volume discount tiers (0%, 5%, 10%, 15%, 20%)
+- [x] Export `DISCOUNT_TIERS`, `getDiscountPercentage`, `calculateDiscount`, `getDiscountTier`
+- [x] **TEST:** 23 tests (all tiers, boundary conditions)
+- [x] _(consolidated with Phase 5 commit)_
 
-### 5.3 Shipping Cost
+### 5.3 Shipping Cost ✅
 
-- [ ] Create `domain/pricing/shipping.ts`
-- [ ] Implement shipping cost formula
-- [ ] Implement 15% validity check
-- [ ] **TEST:** Add shipping tests (formula, 15% rule)
-- [ ] **COMMIT:** `feat(api): implement shipping cost with tests`
+- [x] Create `domain/pricing/shipping.ts`
+- [x] Implement shipping cost formula (distance × weight × qty × $0.01)
+- [x] Implement 15% validity check with detailed breakdown
+- [x] **TEST:** 22 tests (formula, 15% rule, edge cases)
+- [x] _(consolidated with Phase 5 commit)_
 
-### 5.4 Warehouse Optimizer
+### 5.4 Warehouse Optimizer ✅
 
-- [ ] Create `domain/logistics/warehouse-optimizer.ts`
-- [ ] Implement greedy allocation algorithm
-- [ ] Handle insufficient stock
-- [ ] **TEST:** Add optimizer tests (single, multi, insufficient)
-- [ ] **COMMIT:** `feat(api): implement warehouse optimizer with tests`
+- [x] Create `domain/logistics/warehouse-optimizer.ts`
+- [x] Implement greedy allocation algorithm (nearest-first)
+- [x] Handle insufficient stock, weighted average distance
+- [x] **TEST:** 17 tests (single/multi warehouse, insufficient, distance calc)
+- [x] _(consolidated with Phase 5 commit)_
 
-### 5.5 Order Service
+### 5.5 Order Service ✅
 
-- [ ] Create `domain/orders/order.service.ts`
-- [ ] Implement `verifyOrder()` - quote without DB write
-- [ ] Implement `submitOrder()` - with transaction & locking
-- [ ] **TEST:** Add order service tests (verify, submit, errors)
-- [ ] **COMMIT:** `feat(api): implement order service with tests`
+- [x] Create `domain/orders/order.service.ts`
+- [x] Implement `verifyOrder()` - quote without DB write
+- [x] Implement `submitOrder()` - with transaction & pessimistic locking
+- [x] Handle Prisma Decimal type conversions
+- [x] **TEST:** 16 tests (verify, submit, stock updates, order retrieval)
+- [x] **COMMIT:** `feat(api): implement core domain logic with tests`
 
 ---
 
@@ -362,10 +364,10 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 | 2. Database       | ✅ Complete    | 1/1      |
 | 3. Server Setup   | ✅ Complete    | 1/1      |
 | 4. Testing Setup  | ✅ Complete    | 1/1      |
-| 5. Domain Logic   | ⬜ Not Started | 0/5      |
+| 5. Domain Logic   | ✅ Complete    | 1/1      |
 | 6. GraphQL API    | ⬜ Not Started | 0/6      |
 | 7. Frontend       | ⬜ Not Started | 0/12     |
 | 8. DevOps         | ⬜ Not Started | 0/5      |
-| **Total**         | **18%**        | **6/34** |
+| **Total**         | **23%**        | **7/30** |
 
 Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete
