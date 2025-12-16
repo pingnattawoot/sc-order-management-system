@@ -105,7 +105,8 @@ export async function buildServer(): Promise<FastifyInstance> {
       endpoints: {
         health: '/health',
         graphql: GRAPHQL_ENDPOINT,
-        graphiql: config.env.isDev ? GRAPHQL_ENDPOINT : undefined,
+        // NOTE: intentionally enabled for demo purposes
+        graphqlPlayground: GRAPHQL_ENDPOINT,
         resetDemo: '/api/reset-demo',
       },
     });

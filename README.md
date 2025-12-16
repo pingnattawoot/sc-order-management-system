@@ -71,7 +71,7 @@ A backend system for managing SCOS device orders, built as a technical assessmen
 - ✅ **TypeScript** - Full TypeScript implementation (frontend and backend)
 - ✅ **Database** - PostgreSQL with Prisma ORM
 - ✅ **Well-Documented API** - GraphQL with introspection + schema descriptions
-- ✅ **Testing Strategy** - 97+ tests covering unit, integration, and database operations
+- ✅ **Testing Strategy** - 100+ tests covering unit, integration, and database operations
 - ✅ **Production-Ready** - Pessimistic locking, transaction safety, connection pooling
 - ✅ **Easy Local Setup** - Single `pnpm dev` command after database setup
 - ✅ **CI/CD Pipeline** - GitHub Actions with Railway + Vercel deployment
@@ -178,19 +178,35 @@ pnpm --filter api test:watch
 POST /graphql
 ```
 
+### Query Products
+
+```graphql
+query Products {
+  products {
+    id
+    name
+    sku
+    priceInCents
+    weightGrams
+  }
+}
+```
+
 ### Verify Order (Quote)
 
 ```graphql
 mutation VerifyOrder {
   verifyOrder(
     input: {
-      items: [{ productId: "scos-station-p1-pro", quantity: 50 }]
+      items: [{ productId: "ID-OF-SCOS-STATION-P1-PRO", quantity: 50 }]
       latitude: 51.5074
       longitude: -0.1278
     }
   ) {
     isValid
     grandTotalCents
+    subtotalCents
+    totalShippingCostCents
     discount {
       tierName
       discountPercentage
@@ -199,14 +215,14 @@ mutation VerifyOrder {
     shippingValidity {
       isValid
       shippingPercentage
-      maxAllowedPercentage
+      maxAllowedShippingCents
     }
     items {
       productName
       canFulfill
       unitPriceCents
       subtotalCents
-      totalShippingCents
+      shippingCostCents
       shipments {
         warehouseName
         quantity
@@ -224,7 +240,7 @@ mutation VerifyOrder {
 mutation SubmitOrder {
   submitOrder(
     input: {
-      items: [{ productId: "scos-station-p1-pro", quantity: 50 }]
+      items: [{ productId: "ID-OF-SCOS-STATION-P1-PRO", quantity: 50 }]
       latitude: 51.5074
       longitude: -0.1278
     }
@@ -232,24 +248,10 @@ mutation SubmitOrder {
     id
     orderNumber
     status
-    totalCents
+    subtotalCents
     discountCents
     shippingCents
-    grandTotalCents
-  }
-}
-```
-
-### Query Products
-
-```graphql
-query Products {
-  products {
-    id
-    name
-    sku
-    priceInCents
-    weightGrams
+    totalCents
   }
 }
 ```
@@ -281,10 +283,10 @@ query GetOrder {
     id
     orderNumber
     status
-    totalCents
+    subtotalCents
     discountCents
     shippingCents
-    grandTotalCents
+    totalCents
     items {
       product {
         name
