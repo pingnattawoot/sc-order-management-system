@@ -1,21 +1,22 @@
 # =============================================
 # ScreenCloud Order Management System
-# CI/CD Pipeline
+# CI Pipeline - Quality Gates
 # =============================================
 #
-# This workflow:
-# 1. Runs quality checks (lint, typecheck) on all PRs and pushes
-# 2. Runs tests with PostgreSQL service container
-# 3. Deploys to Railway (API) and Vercel (Web) on main branch
+# This workflow ensures code quality before deployment:
+# 1. Lint - Code style and best practices
+# 2. Type Check - TypeScript compilation
+# 3. Test - Unit and integration tests with PostgreSQL
+# 4. Build - Verify both apps compile successfully
 #
-# Required GitHub Secrets:
-# - RAILWAY_TOKEN: Railway deployment token
-# - VERCEL_TOKEN: Vercel deployment token
-# - VERCEL_ORG_ID: Vercel organization ID
-# - VERCEL_PROJECT_ID: Vercel project ID
-# - PRODUCTION_API_URL: Railway API URL for frontend build
+# Deployment Strategy:
+# - Railway (API) and Vercel (Frontend) auto-deploy on push to main
+# - This CI pipeline runs in parallel as a quality gate
+# - If CI fails, you should investigate before the auto-deploy completes
+#
+# For production, you would disable auto-deploy and add deploy jobs here.
 
-name: CI/CD Pipeline
+name: CI Pipeline
 
 on:
   push:
@@ -171,110 +172,17 @@ jobs:
           VITE_API_URL: https://placeholder.railway.app/graphql
 
   # ============================================
-  # Deploy API to Railway (only on main)
+  # Deployment Note
   # ============================================
-  deploy-api:
-    name: Deploy API to Railway
-    needs: [quality, test, build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: ${{ steps.deploy.outputs.url }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy to Railway
-        id: deploy
-        run: |
-          railway up --service api --detach
-          echo "url=https://sc-oms-api.up.railway.app" >> $GITHUB_OUTPUT
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-  # ============================================
-  # Deploy Frontend to Vercel (only on main)
-  # ============================================
-  deploy-web:
-    name: Deploy Web to Vercel
-    needs: [quality, test, build, deploy-api]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: ${{ steps.deploy.outputs.url }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Vercel CLI
-        run: npm install -g vercel
-
-      - name: Pull Vercel Environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: apps/web
-
-      - name: Build for Production
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        working-directory: apps/web
-        env:
-          VITE_API_URL: ${{ secrets.PRODUCTION_API_URL }}
-
-      - name: Deploy to Vercel
-        id: deploy
-        run: |
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
-          echo "url=$url" >> $GITHUB_OUTPUT
-        working-directory: apps/web
-
-  # ============================================
-  # Post-Deployment Health Check
-  # ============================================
-  health-check:
-    name: Health Check
-    needs: [deploy-api, deploy-web]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for deployment
-        run: sleep 30
-
-      - name: Check API Health
-        run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.PRODUCTION_API_URL }}/health || echo "000")
-          if [ "$response" != "200" ]; then
-            echo "API health check failed with status: $response"
-            exit 1
-          fi
-          echo "API is healthy!"
-
-      - name: Check GraphQL Endpoint
-        run: |
-          response=$(curl -s -X POST ${{ secrets.PRODUCTION_API_URL }}/graphql \
-            -H "Content-Type: application/json" \
-            -d '{"query":"{ __typename }"}')
-          if echo "$response" | grep -q "data"; then
-            echo "GraphQL endpoint is responding!"
-          else
-            echo "GraphQL check failed: $response"
-            exit 1
-          fi
-
+  # Deployment is handled by platform auto-deploy:
+  # - Railway: Auto-deploys API on push to main
+  # - Vercel: Auto-deploys Frontend on push to main
+  #
+  # This CI pipeline runs in parallel as a quality gate.
+  # If you need CI-controlled deployment, uncomment the jobs below
+  # and configure these GitHub Secrets:
+  # - RAILWAY_TOKEN
+  # - VERCEL_TOKEN
+  # - VERCEL_ORG_ID
+  # - VERCEL_PROJECT_ID
+  # - PRODUCTION_API_URL
