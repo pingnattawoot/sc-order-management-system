@@ -11,15 +11,19 @@
     "build": "pnpm -r build",
     "test": "pnpm --filter api test",
     "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "setup": "pnpm install && pnpm docker:up && pnpm db:migrate && pnpm db:seed",
     "db:migrate": "pnpm --filter api db:migrate",
     "db:seed": "pnpm --filter api db:seed",
-    "db:studio": "pnpm --filter api db:studio"
+    "db:studio": "pnpm --filter api db:studio",
+    "deploy:api": "railway up --service api",
+    "deploy:web": "vercel --prod",
+    "deploy": "pnpm deploy:api && pnpm deploy:web"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=20.0.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

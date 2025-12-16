@@ -359,14 +359,124 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 - [x] ADR-002: Prisma
 - [x] ADR-003: Greedy Algorithm
 - [x] ADR-004: Decimal.js
-- [x] ADR-005: Pessimistic Locking
+- [x] ADR-005: Pessimistic Locking (with load testing recommendations)
 - [x] ADR-006: pnpm Package Manager
+- [x] ADR-007: Test Database Safety
+- [x] ADR-008: Application-Level Haversine vs PostGIS
+- [x] ADR-009: API Documentation Strategy
+- [x] ADR-010: Deployment Strategy (Vercel + Railway + GitHub Actions)
 - [ ] **COMMIT:** `docs: finalize architecture decision records`
 
 ### 8.5 CI/CD (Bonus)
 
 - [ ] GitHub Actions workflow
 - [ ] **COMMIT:** `ci: add github actions`
+
+---
+
+## Phase 9: Load Testing & Enhanced Documentation
+
+> Validate performance characteristics and ensure API documentation meets production standards.
+
+### 9.1 Load Testing Infrastructure
+
+- [ ] Install k6 load testing tool
+- [ ] Create `load-tests/` directory structure
+- [ ] Add `load-test` script to root package.json
+- [ ] **COMMIT:** `chore: setup k6 load testing infrastructure`
+
+### 9.2 Load Test Scenarios
+
+- [ ] Order submission test (gradual ramp-up)
+- [ ] Concurrent orders test (spike test)
+- [ ] Read query test (ensure reads don't block)
+- [ ] Document performance targets (p50 < 100ms, p95 < 500ms)
+- [ ] **COMMIT:** `feat: implement k6 load test scenarios`
+
+### 9.3 Rollback & Error Tests
+
+- [ ] Insufficient stock rollback test
+- [ ] Timeout handling test
+- [ ] Connection pool exhaustion test
+- [ ] Verify stock unchanged after failures
+- [ ] **COMMIT:** `test: add rollback and error handling load tests`
+
+### 9.4 GraphQL Schema Documentation
+
+- [ ] Rich descriptions for all types (Product, Warehouse, Order, Quote)
+- [ ] Mutation descriptions with business rules and error codes
+- [ ] Examples in descriptions where helpful
+- [ ] **COMMIT:** `docs(api): enhance GraphQL schema descriptions`
+
+### 9.5 API Reference Documentation
+
+- [ ] Generate static `schema.graphql`
+- [ ] Create `docs/API_REFERENCE.md`
+- [ ] Document business rules (discounts, shipping, allocation)
+- [ ] Add example queries and mutations
+- [ ] **COMMIT:** `docs: add comprehensive API reference`
+
+### 9.6 Performance Documentation
+
+- [ ] Run load tests and capture baseline metrics
+- [ ] Create `docs/PERFORMANCE.md`
+- [ ] Document capacity planning guidelines
+- [ ] Scaling recommendations
+- [ ] **COMMIT:** `docs: add performance baseline documentation`
+
+---
+
+## Phase 10: Deployment & CI/CD
+
+> Deploy to free platforms (Vercel + Railway) with GitHub Actions CI/CD pipeline.
+
+### 10.1 GitHub Actions CI Pipeline
+
+- [ ] Create `.github/workflows/ci.yml`
+- [ ] Quality checks job (lint, typecheck)
+- [ ] Test job with PostgreSQL service container
+- [ ] Configure pnpm caching
+- [ ] **COMMIT:** `ci: add GitHub Actions CI pipeline`
+
+### 10.2 Railway Backend Deployment
+
+- [ ] Create Railway account and project
+- [ ] Add PostgreSQL plugin
+- [ ] Create `apps/api/railway.toml`
+- [ ] Configure environment variables
+- [ ] Add `RAILWAY_TOKEN` to GitHub Secrets
+- [ ] **COMMIT:** `chore(api): add Railway deployment config`
+
+### 10.3 Vercel Frontend Deployment
+
+- [ ] Create Vercel account and link repo
+- [ ] Create `apps/web/vercel.json`
+- [ ] Configure `VITE_API_URL` environment variable
+- [ ] Add Vercel tokens to GitHub Secrets
+- [ ] **COMMIT:** `chore(web): add Vercel deployment config`
+
+### 10.4 Deploy Jobs in CI/CD
+
+- [ ] Add deploy-api job (Railway CLI)
+- [ ] Add deploy-web job (Vercel Action)
+- [ ] Configure deploy only on `main` branch
+- [ ] Add deployment dependencies
+- [ ] **COMMIT:** `ci: add deployment jobs to GitHub Actions`
+
+### 10.5 Production Configuration
+
+- [ ] Apollo Client uses `VITE_API_URL`
+- [ ] Production CORS configuration
+- [ ] Production logging (JSON format)
+- [ ] Database connection pooling
+- [ ] **COMMIT:** `feat: add production environment configuration`
+
+### 10.6 Deployment Documentation
+
+- [ ] Update README with deployment URLs
+- [ ] Document deployment process
+- [ ] Environment variables reference
+- [ ] **COMMIT:** `docs: add deployment documentation`
 
 ---
 
@@ -404,17 +514,19 @@ A quick-reference checklist for tracking implementation progress. See [docs/IMPL
 
 ## Progress
 
-| Phase                | Status         | Commits  |
-| -------------------- | -------------- | -------- |
-| 1. Infrastructure    | ✅ Complete    | 3/3      |
-| 2. Database          | ✅ Complete    | 1/1      |
-| 3. Server Setup      | ✅ Complete    | 1/1      |
-| 4. Testing Setup     | ✅ Complete    | 1/1      |
-| 5. Domain Logic      | ✅ Complete    | 1/1      |
-| 6. GraphQL API       | ✅ Complete    | 1/1      |
-| 7. Frontend          | ✅ Complete    | 4/4      |
-| 7.9 Multi-Product    | ✅ Complete    | 2/2      |
-| 8. DevOps            | ⬜ Not Started | 0/5      |
-| **Total**            | **72%**        | **13/20**|
+| Phase               | Status         | Commits   |
+| ------------------- | -------------- | --------- |
+| 1. Infrastructure   | ✅ Complete    | 3/3       |
+| 2. Database         | ✅ Complete    | 1/1       |
+| 3. Server Setup     | ✅ Complete    | 1/1       |
+| 4. Testing Setup    | ✅ Complete    | 1/1       |
+| 5. Domain Logic     | ✅ Complete    | 1/1       |
+| 6. GraphQL API      | ✅ Complete    | 1/1       |
+| 7. Frontend         | ✅ Complete    | 4/4       |
+| 7.9 Multi-Product   | ✅ Complete    | 2/2       |
+| 8. DevOps           | ⬜ Not Started | 0/5       |
+| 9. Load Test & Docs | ⬜ Not Started | 0/6       |
+| 10. Deployment      | ⬜ Not Started | 0/6       |
+| **Total**           | **47%**        | **14/32** |
 
 Legend: ⬜ Not Started | 🟡 In Progress | ✅ Complete
