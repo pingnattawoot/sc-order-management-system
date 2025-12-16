@@ -22,8 +22,8 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY apps/api ./apps/api
 
-# Generate Prisma client
-RUN pnpm --filter api exec prisma generate
+# Generate Prisma client (dummy URL - generate only reads schema, doesn't connect)
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" pnpm --filter api exec prisma generate
 
 # Build the API
 RUN pnpm --filter api build
