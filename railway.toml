@@ -13,15 +13,12 @@
 # - PORT: Auto-provided by Railway
 
 [build]
-# Use Nixpacks builder (auto-detects Node.js)
-builder = "nixpacks"
-
-# Build command (runs during deployment)
-buildCommand = "pnpm install --frozen-lockfile && pnpm --filter api exec prisma generate && pnpm --filter api build"
+# Use Dockerfile for full control over Node.js version
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-# Start command for the service
-startCommand = "pnpm --filter api exec prisma migrate deploy && pnpm --filter api start"
+# Start command is defined in Dockerfile CMD
 
 # Health check endpoint (Railway will ping this to verify the app is running)
 healthcheckPath = "/health"
