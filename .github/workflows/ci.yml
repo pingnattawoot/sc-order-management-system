@@ -59,6 +59,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: pnpm --filter api exec prisma generate
+        env:
+          # Dummy URL for prisma generate (no actual DB connection needed)
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
       - name: Lint
         run: pnpm run lint
@@ -107,6 +110,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: pnpm --filter api exec prisma generate
+        env:
+          # Dummy URL for prisma generate (no actual DB connection needed)
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
       - name: Run database migrations
         run: pnpm --filter api exec prisma migrate deploy
@@ -152,6 +158,9 @@ jobs:
 
       - name: Generate Prisma Client
         run: pnpm --filter api exec prisma generate
+        env:
+          # Dummy URL for prisma generate (no actual DB connection needed)
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
 
       - name: Build API
         run: pnpm --filter api build
