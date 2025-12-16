@@ -8,7 +8,13 @@
  */
 
 import { NewOrderTab, OrdersTab, StockTab } from "@/components/tabs";
-import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 
@@ -20,10 +26,13 @@ const API_BASE_URL = (
 function App() {
   const [isResetting, setIsResetting] = useState(false);
 
-  const handleResetDemo = async () => {
+  const handleResetDemo = async (productCount: number) => {
+    const modeLabel = productCount === 1 ? "Single Product" : "Multi-Product";
     if (
       !confirm(
-        "⚠️ This will reset the database to its initial demo state.\n\nAll orders will be deleted and stock levels will be restored.\n\nContinue?"
+        `⚠️ Reset to ${modeLabel} mode?\n\nThis will reset the database to its initial demo state with ${productCount} product${
+          productCount > 1 ? "s" : ""
+        }.\n\nAll orders will be deleted and stock levels will be restored.\n\nContinue?`
       )
     ) {
       return;
@@ -31,17 +40,20 @@ function App() {
 
     setIsResetting(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/reset-demo`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/reset-demo?productCount=${productCount}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        }
+      );
 
       const data = await response.json();
 
       if (data.success) {
         alert(
-          "✅ Database reset successful!\n\nProducts, warehouses, and stock levels have been restored.\n\nPage will reload."
+          `✅ Database reset successful!\n\nMode: ${modeLabel}\nProducts: ${data.data.products}\nWarehouses: ${data.data.warehouses}\n\nPage will reload.`
         );
         // Reload the page to refresh all data
         window.location.reload();
@@ -78,19 +90,23 @@ function App() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-muted-foreground hidden sm:inline">
-                📦
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetDemo}
+            <div className="flex items-center gap-2">
+              <Select
                 disabled={isResetting}
-                className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                onValueChange={(value) => handleResetDemo(parseInt(value))}
               >
-                {isResetting ? "🔄 Resetting..." : "🔄 Reset Stock"}
-              </Button>
+                <SelectTrigger className="w-[180px] text-orange-600 border-orange-300 hover:bg-orange-50">
+                  <SelectValue
+                    placeholder={
+                      isResetting ? "🔄 Resetting..." : "🔄 Reset Stock"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">📦 Single Product</SelectItem>
+                  <SelectItem value="2">📦📦 Multi-Product</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

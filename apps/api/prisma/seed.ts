@@ -2,7 +2,7 @@
  * Prisma Database Seed Script
  *
  * Seeds the database with initial data:
- * - 2 Products: SCOS Station P1 Pro, SCOS Mount Kit
+ * - 3 Products: SCOS Station P1 Pro, SCOS Pixi
  * - 6 Warehouses worldwide
  * - Stock levels per product per warehouse
  *
@@ -35,14 +35,6 @@ const PRODUCTS = [
       'ScreenCloud OS Station P1 Pro - A powerful digital signage player for enterprise deployments',
     priceInCents: 15000, // $150.00
     weightGrams: 365, // 365g
-  },
-  {
-    sku: 'SCOS-MOUNT-KIT',
-    name: 'SCOS Mount Kit',
-    description:
-      'Universal VESA mount kit compatible with all SCOS Station devices',
-    priceInCents: 2500, // $25.00
-    weightGrams: 120, // 120g
   },
 ];
 
@@ -80,14 +72,14 @@ const WAREHOUSES = [
   },
 ];
 
-// Stock levels per warehouse per product [P1 Pro, Mount Kit]
+// Stock levels per warehouse per product [P1 Pro, Pixi, Mount Kit]
 const STOCK_LEVELS: Record<string, number[]> = {
-  'Los Angeles': [355, 500],
-  'New York': [578, 750],
-  'São Paulo': [265, 300],
-  Paris: [694, 850],
-  Warsaw: [245, 400],
-  'Hong Kong': [419, 600],
+  'Los Angeles': [355, 420, 500],
+  'New York': [578, 680, 750],
+  'São Paulo': [265, 310, 300],
+  Paris: [694, 780, 850],
+  Warsaw: [245, 290, 400],
+  'Hong Kong': [419, 520, 600],
 };
 
 // =============================================
@@ -131,9 +123,7 @@ async function seedWarehouses() {
     });
 
     createdWarehouses.push(warehouse);
-    console.log(
-      `   ✓ ${warehouse.name} (${warehouse.latitude}, ${warehouse.longitude})`
-    );
+    console.log(`   ✓ ${warehouse.name} (${warehouse.latitude}, ${warehouse.longitude})`);
   }
 
   return createdWarehouses;

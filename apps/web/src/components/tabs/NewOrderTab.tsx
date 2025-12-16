@@ -76,13 +76,6 @@ function useDebouncedCallback<T extends (...args: unknown[]) => void>(
   return debouncedFn;
 }
 
-/** Parse formatted number string (with commas) to number */
-const parseFormattedNumber = (value: string): number => {
-  const cleaned = value.replace(/,/g, "").replace(/[^0-9]/g, "");
-  return parseInt(cleaned) || 0;
-};
-
-// Order item being built
 interface OrderItemDraft {
   productId: string;
   quantity: number;
@@ -365,74 +358,70 @@ export function NewOrderTab() {
                     return (
                       <div
                         key={index}
-                        className="p-3 border rounded-lg space-y-2"
+                        className="p-3 border rounded-lg space-y-3"
                       >
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs text-muted-foreground">
-                            Product
-                          </Label>
+                        {/* Product */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <Label className="text-xs text-muted-foreground mb-1 block">
+                              Product
+                            </Label>
+                            <Select
+                              value={item.productId}
+                              onValueChange={(value: string) =>
+                                handleUpdateItem(index, { productId: value })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select product" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {products.map((p) => (
+                                  <SelectItem key={p.id} value={p.id!}>
+                                    {p.name} ({formatCurrency(p.priceInCents)})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive mt-5"
                             onClick={() => handleRemoveItem(index)}
                           >
                             ×
                           </Button>
                         </div>
-                        <Select
-                          value={item.productId}
-                          onValueChange={(value: string) =>
-                            handleUpdateItem(index, { productId: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select product" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((p) => (
-                              <SelectItem key={p.id} value={p.id!}>
-                                {p.name} ({formatCurrency(p.priceInCents)})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">
+
+                        {/* Quantity */}
+                        <div>
+                          <Label className="text-xs text-muted-foreground mb-1 block">
                             Quantity
                           </Label>
                           <Input
-                            type="text"
-                            inputMode="numeric"
-                            value={
-                              item.quantity > 0
-                                ? formatNumber(item.quantity)
-                                : ""
-                            }
+                            type="number"
+                            min="0"
+                            value={item.quantity || ""}
                             onChange={(e) =>
                               handleUpdateItem(index, {
-                                quantity: parseFormattedNumber(e.target.value),
+                                quantity: parseInt(e.target.value) || 0,
                               })
                             }
-                            className={`h-9 text-right font-mono ${
-                              item.quantity === 0
-                                ? "border-orange-300 focus-visible:ring-orange-300"
-                                : ""
-                            }`}
                             placeholder="Enter quantity"
                           />
-                          {item.quantity === 0 && (
-                            <p className="text-xs text-orange-500">
-                              Enter a quantity to see pricing
-                            </p>
-                          )}
                         </div>
+
+                        {/* Subtotal */}
                         {product && item.quantity > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            Subtotal:{" "}
-                            {formatCurrency(
-                              (product.priceInCents ?? 0) * item.quantity
-                            )}
+                          <div className="text-sm text-muted-foreground pt-1 border-t">
+                            {formatNumber(item.quantity)} ×{" "}
+                            {formatCurrency(product.priceInCents)} ={" "}
+                            <span className="font-medium text-foreground">
+                              {formatCurrency(
+                                (product.priceInCents ?? 0) * item.quantity
+                              )}
+                            </span>
                           </div>
                         )}
                       </div>

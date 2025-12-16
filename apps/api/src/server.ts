@@ -25,14 +25,14 @@ const SEED_DATA = {
       priceInCents: 15000,
       weightGrams: 365,
     },
-    // NOTE: enable this when need to test multiple products
-    // {
-    //   sku: 'SCOS-MOUNT-KIT',
-    //   name: 'SCOS Mount Kit',
-    //   description: 'Universal VESA mount kit compatible with all SCOS Station devices',
-    //   priceInCents: 2500,
-    //   weightGrams: 120,
-    // },
+    {
+      sku: 'PIXI',
+      name: 'Pixi',
+      description:
+        "ScreenCloud's budget-friendly, plug-and-play digital signage media player, designed to easily turn any screen into a dynamic display, running on Android 14 with ScreenCloud's own OS, offering 4K, 4GB RAM, 64GB storage, and remote management for simple, affordable, enterprise-ready content display in places like education, healthcare, or retail.",
+      priceInCents: 9900,
+      weightGrams: 200,
+    },
   ],
   warehouses: [
     { name: 'Los Angeles', latitude: 33.9425, longitude: -118.408056 },
@@ -112,79 +112,91 @@ export async function buildServer(): Promise<FastifyInstance> {
   });
 
   // Reset/Seed endpoint for demo purposes
-  // Usage: POST /api/reset-demo
+  // Usage: POST /api/reset-demo?productCount=1 (or 2)
   // This resets the database to initial state with seed data
-  server.post('/api/reset-demo', async (_request, reply) => {
-    try {
-      server.log.info('🔄 Resetting database to demo state...');
+  server.post<{ Querystring: { productCount?: string } }>(
+    '/api/reset-demo',
+    async (request, reply) => {
+      try {
+        // Parse productCount from query (default to 1 for single product mode)
+        const productCount = Math.min(
+          Math.max(parseInt(request.query.productCount || '1') || 1, 1),
+          SEED_DATA.products.length
+        );
 
-      // Delete all existing data (in correct order due to foreign keys)
-      await prisma.orderShipment.deleteMany({});
-      await prisma.orderItem.deleteMany({});
-      await prisma.order.deleteMany({});
-      await prisma.warehouseStock.deleteMany({});
-      await prisma.warehouse.deleteMany({});
-      await prisma.product.deleteMany({});
+        server.log.info(
+          `🔄 Resetting database to demo state (${productCount} product${productCount > 1 ? 's' : ''})...`
+        );
 
-      server.log.info('   ✓ Cleared existing data');
+        // Delete all existing data (in correct order due to foreign keys)
+        await prisma.orderShipment.deleteMany({});
+        await prisma.orderItem.deleteMany({});
+        await prisma.order.deleteMany({});
+        await prisma.warehouseStock.deleteMany({});
+        await prisma.warehouse.deleteMany({});
+        await prisma.product.deleteMany({});
 
-      // Seed products
-      const products = [];
-      for (const productData of SEED_DATA.products) {
-        const product = await prisma.product.create({ data: productData });
-        products.push(product);
-      }
-      server.log.info(`   ✓ Created ${products.length} products`);
+        server.log.info('   ✓ Cleared existing data');
 
-      // Seed warehouses
-      const warehouses = [];
-      for (const warehouseData of SEED_DATA.warehouses) {
-        const warehouse = await prisma.warehouse.create({ data: warehouseData });
-        warehouses.push(warehouse);
-      }
-      server.log.info(`   ✓ Created ${warehouses.length} warehouses`);
-
-      // Seed warehouse stocks
-      let stockCount = 0;
-      for (const warehouse of warehouses) {
-        const stockLevels = SEED_DATA.stockLevels[warehouse.name];
-        if (!stockLevels) continue;
-
-        for (let i = 0; i < products.length; i++) {
-          const product = products[i];
-          if (!product) continue;
-          await prisma.warehouseStock.create({
-            data: {
-              warehouseId: warehouse.id,
-              productId: product.id,
-              quantity: stockLevels[i] ?? 0,
-            },
-          });
-          stockCount++;
+        // Seed products (only the requested count)
+        const products = [];
+        const productsToSeed = SEED_DATA.products.slice(0, productCount);
+        for (const productData of productsToSeed) {
+          const product = await prisma.product.create({ data: productData });
+          products.push(product);
         }
+        server.log.info(`   ✓ Created ${products.length} products`);
+
+        // Seed warehouses
+        const warehouses = [];
+        for (const warehouseData of SEED_DATA.warehouses) {
+          const warehouse = await prisma.warehouse.create({ data: warehouseData });
+          warehouses.push(warehouse);
+        }
+        server.log.info(`   ✓ Created ${warehouses.length} warehouses`);
+
+        // Seed warehouse stocks
+        let stockCount = 0;
+        for (const warehouse of warehouses) {
+          const stockLevels = SEED_DATA.stockLevels[warehouse.name];
+          if (!stockLevels) continue;
+
+          for (let i = 0; i < products.length; i++) {
+            const product = products[i];
+            if (!product) continue;
+            await prisma.warehouseStock.create({
+              data: {
+                warehouseId: warehouse.id,
+                productId: product.id,
+                quantity: stockLevels[i] ?? 0,
+              },
+            });
+            stockCount++;
+          }
+        }
+        server.log.info(`   ✓ Created ${stockCount} stock entries`);
+
+        server.log.info('✅ Database reset complete!');
+
+        return reply.send({
+          success: true,
+          message: 'Database reset to demo state',
+          data: {
+            products: products.length,
+            warehouses: warehouses.length,
+            stockEntries: stockCount,
+          },
+        });
+      } catch (error) {
+        server.log.error(error, 'Failed to reset database');
+        return reply.status(500).send({
+          success: false,
+          message: 'Failed to reset database',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
-      server.log.info(`   ✓ Created ${stockCount} stock entries`);
-
-      server.log.info('✅ Database reset complete!');
-
-      return reply.send({
-        success: true,
-        message: 'Database reset to demo state',
-        data: {
-          products: products.length,
-          warehouses: warehouses.length,
-          stockEntries: stockCount,
-        },
-      });
-    } catch (error) {
-      server.log.error(error, 'Failed to reset database');
-      return reply.status(500).send({
-        success: false,
-        message: 'Failed to reset database',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
     }
-  });
+  );
 
   // GraphQL endpoint (via GraphQL Yoga)
   const yoga = createGraphQLServer();

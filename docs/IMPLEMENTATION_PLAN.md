@@ -426,10 +426,10 @@ model WarehouseStock {
   warehouseId String
   productId   String
   quantity    Int       @default(0)
-
+  
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
   product     Product   @relation(fields: [productId], references: [id])
-
+  
   @@unique([warehouseId, productId])
   @@index([productId])
 }
@@ -441,11 +441,11 @@ model OrderItem {
   quantity       Int
   unitPriceCents Int
   subtotalCents  Int
-
+  
   order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product         @relation(fields: [productId], references: [id])
   shipments OrderShipment[]
-
+  
   @@index([orderId])
   @@index([productId])
 }
