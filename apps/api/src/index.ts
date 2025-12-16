@@ -17,15 +17,14 @@ async function main() {
     });
 
     const port = config.server.port;
-    console.log(`
-╔════════════════════════════════════════════════════════════╗
-║  ScreenCloud Order Management System                       ║
-╠════════════════════════════════════════════════════════════╣
-║  🚀 Server running at http://localhost:${port.toString().padEnd(5)}              ║
-║  📊 Health check: http://localhost:${port}/health             ║
-║  🔮 GraphQL API:  http://localhost:${port}/graphql            ║
-${config.env.isDev ? `║  📝 GraphiQL:    http://localhost:${port}/graphql            ║\n` : ''}╚════════════════════════════════════════════════════════════╝
-    `);
+    console.log('\n📦 ScreenCloud Order Management System\n');
+    console.log(`   🚀 Server:     http://localhost:${port}`);
+    console.log(`   📊 Health:     http://localhost:${port}/health`);
+    console.log(`   🔮 GraphQL:    http://localhost:${port}/graphql`);
+    if (config.env.isDev) {
+      console.log(`   📝 Playground: http://localhost:${port}/graphql`);
+    }
+    console.log('');
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

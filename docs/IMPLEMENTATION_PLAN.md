@@ -514,323 +514,220 @@ The greedy "nearest is cheapest" algorithm continues to work because:
 
 ---
 
-## Phase 8: DevOps & Documentation
+## Phase 8: DevOps & Documentation ✅
 
-### 8.1 Create Unified Start Command
+### 8.1 Create Unified Start Command ✅
 
-- [ ] Update root `package.json` scripts:
+- [x] Update root `package.json` scripts:
   - `dev` - Start both API and Web concurrently
-  - `setup` - Install deps, run migrations, seed DB
-  - `docker:up` - Start PostgreSQL
-  - `docker:down` - Stop PostgreSQL
-- [ ] Use pnpm's built-in `--parallel` flag for concurrent processes
-- [ ] **COMMIT:** "chore: add unified development scripts"
+  - `build` - Build both packages
+  - `lint` - Lint all packages
+  - `typecheck` - Type check all packages
+- [x] Use pnpm workspace filtering (`--filter`)
+- [x] _(Included in monorepo setup)_
 
-### 8.2 Create Dockerfile for API
+### 8.2 Create Dockerfile for API ✅
 
-- [ ] Create `apps/api/Dockerfile`
-- [ ] Multi-stage build for production
-- [ ] Include Prisma generation step
-- [ ] **COMMIT:** "chore(api): add production dockerfile"
+- [x] Create `Dockerfile` at monorepo root
+- [x] Multi-stage build for production (Node 22 Alpine)
+- [x] Include Prisma generate and migrate steps
+- [x] Health check endpoint configured
+- [x] _(Deployed to Railway)_
 
-### 8.3 Create README.md
+### 8.3 Create README.md ✅
 
-- [ ] Add project description
-- [ ] Add quick start guide
-- [ ] Document API endpoints
-- [ ] Add architecture overview
-- [ ] Include development instructions
-- [ ] **COMMIT:** "docs: add comprehensive readme"
+- [x] Project description with challenge requirements
+- [x] Quick start guide
+- [x] API documentation with GraphQL examples
+- [x] Architecture overview with diagram
+- [x] Requirements checklist (functional & technical)
+- [x] "What I Would Do Next" section
+- [x] _(Comprehensive README complete)_
 
-### 8.4 Finalize Architecture Decision Records
+### 8.4 Finalize Architecture Decision Records ✅
 
 - [x] ADR-001: GraphQL over REST
 - [x] ADR-002: Prisma ORM Selection
 - [x] ADR-003: Greedy Algorithm for Warehouse Selection
 - [x] ADR-004: Decimal.js for Money Calculations
-- [x] ADR-005: Pessimistic Locking for Stock Updates (updated with load testing recommendations)
+- [x] ADR-005: Pessimistic Locking for Stock Updates (with load testing recommendations)
 - [x] ADR-006: pnpm Package Manager
 - [x] ADR-007: Test Database Safety
 - [x] ADR-008: Application-Level Haversine vs PostGIS
 - [x] ADR-009: API Documentation Strategy
 - [x] ADR-010: Deployment Strategy (Vercel + Railway + GitHub Actions)
-- [ ] **COMMIT:** "docs: finalize architecture decision records"
+- [x] _(All 10 ADRs complete)_
 
-### 8.5 Setup GitHub Actions (Bonus)
+### 8.5 Setup GitHub Actions ✅
 
-- [ ] Create `.github/workflows/ci.yml`
-- [ ] Add lint check step
-- [ ] Add type check step
-- [ ] Add test step
-- [ ] **COMMIT:** "ci: add github actions workflow"
+- [x] Create `.github/workflows/ci.yml`
+- [x] Quality checks (lint, typecheck)
+- [x] Test job with PostgreSQL service container
+- [x] Deploy jobs (Railway + Vercel auto-deploy on main)
+- [x] _(CI/CD pipeline complete)_
 
 ---
 
-## Phase 9: Load Testing & Enhanced Documentation
+## Phase 9: Load Testing & Enhanced Documentation 🟡
 
-> **Why Phase 9?** Validate performance characteristics of pessimistic locking under load and ensure API documentation meets production standards.
+> **Status:** Optional phase - load testing infrastructure documented but not implemented. API documentation complete via README and GraphQL introspection.
 
-### 9.1 Setup Load Testing Infrastructure
+### 9.1-9.3 Load Testing Infrastructure (Future)
 
 - [ ] Install k6 load testing tool
-- [ ] Create `load-tests/` directory structure:
-  ```
-  load-tests/
-  ├── scenarios/
-  │   ├── order-submission.js     # Main order flow
-  │   ├── concurrent-orders.js    # Lock contention test
-  │   └── read-queries.js         # Query performance
-  ├── config/
-  │   └── thresholds.json         # Performance targets
-  ├── data/
-  │   └── product-ids.json        # Test data
-  └── README.md                   # Load test documentation
-  ```
-- [ ] Add `load-test` script to root `package.json`
-- [ ] **COMMIT:** "chore: setup k6 load testing infrastructure"
+- [ ] Create load test scenarios (order submission, concurrent orders, read queries)
+- [ ] _(ADR-005 documents k6 example script and performance targets)_
+- [ ] _(Recommended for production systems with high concurrency requirements)_
 
-### 9.2 Implement Load Test Scenarios
+### 9.4 GraphQL Schema Documentation ✅
 
-- [ ] **Order Submission Test** (`order-submission.js`)
-  - Gradual ramp-up (0 → 50 → 100 VUs)
-  - Measure p50, p95, p99 latency
-  - Track error rates
-  - Monitor lock wait times
-- [ ] **Concurrent Orders Test** (`concurrent-orders.js`)
-  - Spike test (sudden 200 VUs)
-  - Verify rollback behavior
-  - Check connection pool handling
-  - Validate timeout behavior
-- [ ] **Read Query Test** (`read-queries.js`)
+- [x] GraphQL Playground available and intentionally enabled in production for demo
+- [x] Schema introspection enabled
+- [x] Types have descriptions via Pothos builder
+- [x] _(ADR-009 documents API documentation strategy)_
 
-  - Test `products`, `warehouses`, `orders` queries
-  - Ensure reads don't block during writes
-  - Verify no lock contention on reads
+### 9.5 API Reference Documentation ✅
 
-- [ ] Document expected performance targets:
-      | Metric | Target |
-      |--------|--------|
-      | p50 latency | < 100ms |
-      | p95 latency | < 500ms |
-      | p99 latency | < 1000ms |
-      | Error rate | < 1% |
-      | Throughput | 100+ req/s |
-
-- [ ] **COMMIT:** "feat: implement k6 load test scenarios"
-
-### 9.3 Rollback & Error Handling Tests
-
-- [ ] Create test for insufficient stock rollback
-- [ ] Create test for timeout handling
-- [ ] Create test for connection pool exhaustion
-- [ ] Verify stock levels unchanged after failed transactions
-- [ ] Add assertions for GraphQL error codes
-- [ ] **COMMIT:** "test: add rollback and error handling load tests"
-
-### 9.4 Enhance GraphQL Schema Documentation
-
-- [ ] Add rich descriptions to all GraphQL types:
-  - Product type (price format, weight units)
-  - Warehouse type (coordinate precision)
-  - Order type (status meanings, number format)
-  - Quote type (validity rules, shipping calculation)
-- [ ] Add descriptions to all mutations:
-  - `verifyOrder`: Business rules, error codes
-  - `submitOrder`: Locking behavior, rollback scenarios
-- [ ] Add examples in descriptions where helpful
-- [ ] **COMMIT:** "docs(api): enhance GraphQL schema descriptions"
-
-### 9.5 Create API Reference Documentation
-
-- [ ] Generate static `schema.graphql` file
-- [ ] Create `docs/API_REFERENCE.md` with:
-  - Authentication (if applicable)
-  - Rate limiting policies
-  - Error code reference
-  - Business rules summary
-  - Example queries and mutations
-- [ ] Add business rules documentation:
+- [x] Static `schema.graphql` generated (358 lines)
+- [x] README.md includes comprehensive API documentation:
   - Volume discount tiers table
   - Shipping cost formula
   - 15% shipping cap rule
   - Greedy allocation algorithm explanation
-- [ ] **COMMIT:** "docs: add comprehensive API reference"
+  - Example queries and mutations
+- [x] _(README serves as primary API reference)_
 
-### 9.6 Performance Baseline Documentation
+### 9.6 Performance Documentation
 
-- [ ] Run load tests and capture baseline metrics
-- [ ] Create `docs/PERFORMANCE.md` with:
-  - Baseline performance characteristics
-  - Scaling recommendations
-  - PostgreSQL tuning suggestions
-  - Connection pool configuration
-  - Known limitations
-- [ ] Document capacity planning guidelines:
-  - When to consider read replicas
-  - When to consider queue-based processing
-  - When to migrate to PostGIS
-- [ ] **COMMIT:** "docs: add performance baseline documentation"
+- [ ] _(Future: Run load tests and capture baseline metrics)_
+- [x] ADR-005 documents pessimistic locking capacity analysis
+- [x] ADR-008 documents when to consider PostGIS for scale
+- [ ] _(Scaling recommendations documented in "What Would I Do Next")_
 
 ---
 
-## Phase 10: Deployment & CI/CD
+## Phase 10: Deployment & CI/CD ✅
 
-> **Why Phase 10?** Demonstrate production-ready deployment practices with free platforms for interview showcase.
+> **Status:** Complete! Live demo deployed with CI/CD pipeline.
 
-### 10.1 Setup GitHub Actions CI Pipeline
+### 10.1 Setup GitHub Actions CI Pipeline ✅
 
-- [ ] Create `.github/workflows/ci.yml`
-- [ ] Add quality checks job:
-  - pnpm install with frozen lockfile
-  - ESLint check
-  - TypeScript type check
-- [ ] Add test job:
-  - PostgreSQL service container
-  - Prisma migrate & generate
-  - Vitest test run
-- [ ] Configure caching for pnpm
-- [ ] **COMMIT:** "ci: add GitHub Actions CI pipeline"
+- [x] Create `.github/workflows/ci.yml`
+- [x] Add quality checks job (lint, typecheck)
+- [x] Add test job with PostgreSQL service container
+- [x] Configure pnpm caching
+- [x] _(CI pipeline runs on all pushes)_
 
-### 10.2 Setup Railway Backend Deployment
+### 10.2 Setup Railway Backend Deployment ✅
 
-- [ ] Create Railway account and project
-- [ ] Add PostgreSQL plugin to Railway
-- [ ] Create `apps/api/railway.toml` configuration:
-  ```toml
-  [build]
-  builder = "nixpacks"
-  
-  [deploy]
-  startCommand = "pnpm run start"
-  healthcheckPath = "/health"
-  restartPolicyType = "ON_FAILURE"
-  ```
-- [ ] Configure environment variables:
-  - `DATABASE_URL` (auto-provided)
-  - `NODE_ENV=production`
-  - `CORS_ORIGIN` (Vercel URL)
-- [ ] Add `RAILWAY_TOKEN` to GitHub Secrets
-- [ ] **COMMIT:** "chore(api): add Railway deployment config"
+- [x] Railway project created with PostgreSQL database
+- [x] Dockerfile at monorepo root (multi-stage build)
+- [x] `railway.toml` configuration
+- [x] Environment variables: `DATABASE_URL`, `NODE_ENV=production`, `CORS_ORIGIN=*`
+- [x] **Live URL:** https://api-production-1800.up.railway.app
 
-### 10.3 Setup Vercel Frontend Deployment
+### 10.3 Setup Vercel Frontend Deployment ✅
 
-- [ ] Create Vercel account and link repository
-- [ ] Create `apps/web/vercel.json`:
-  ```json
-  {
-    "buildCommand": "pnpm run build",
-    "outputDirectory": "dist",
-    "framework": "vite"
-  }
-  ```
-- [ ] Configure environment variables:
-  - `VITE_API_URL` (Railway API URL)
-- [ ] Add Vercel tokens to GitHub Secrets:
-  - `VERCEL_TOKEN`
-  - `VERCEL_ORG_ID`
-  - `VERCEL_PROJECT_ID`
-- [ ] **COMMIT:** "chore(web): add Vercel deployment config"
+- [x] Vercel project linked to repository
+- [x] `vercel.json` at monorepo root
+- [x] Environment variable: `VITE_API_URL` (Railway API URL)
+- [x] **Live URL:** https://sc-order-management-system.vercel.app
 
-### 10.4 Add Deploy Jobs to CI/CD
+### 10.4 Auto-Deploy on Main Branch ✅
 
-- [ ] Add deploy-api job (Railway CLI)
-- [ ] Add deploy-web job (Vercel Action)
-- [ ] Configure deployment only on `main` branch push
-- [ ] Add deployment dependencies (after quality + test pass)
-- [ ] **COMMIT:** "ci: add deployment jobs to GitHub Actions"
+- [x] Railway auto-deploys on push to `main`
+- [x] Vercel auto-deploys on push to `main`
+- [x] _(Using platform auto-deploy for simplicity)_
 
-### 10.5 Production Environment Configuration
+### 10.5 Production Environment Configuration ✅
 
-- [ ] Update Apollo Client to use `VITE_API_URL` environment variable
-- [ ] Add production CORS configuration to API
-- [ ] Add production logging (JSON format)
-- [ ] Disable GraphiQL in production (or protect it)
-- [ ] Add production database connection pooling config
-- [ ] **COMMIT:** "feat: add production environment configuration"
+- [x] Apollo Client uses `VITE_API_URL` environment variable
+- [x] Production CORS enabled (all origins for demo)
+- [x] Production logging (JSON format in prod)
+- [x] GraphQL Playground intentionally enabled for demo
+- [x] Database connection pooling configured
 
-### 10.6 Add Deployment Documentation
+### 10.6 Bonus: Reset Demo Feature ✅
 
-- [ ] Update README.md with deployment URLs
-- [ ] Document deployment process
-- [ ] Add deployment troubleshooting guide
-- [ ] Create environment variables reference
-- [ ] **COMMIT:** "docs: add deployment documentation"
+- [x] POST `/api/reset-demo` endpoint
+- [x] "🔄 Reset Demo" button in frontend header
+- [x] Clears orders and restores seed data
 
-### Deployment URLs (After Setup)
+### Deployment URLs ✅
 
-| Component | URL |
-| --------- | --- |
-| Frontend | `https://sc-oms.vercel.app` |
-| API | `https://sc-oms-api.up.railway.app` |
-| GraphiQL | `https://sc-oms-api.up.railway.app/graphql` |
-| Health | `https://sc-oms-api.up.railway.app/health` |
+| Component          | URL                                                |
+| ------------------ | -------------------------------------------------- |
+| Frontend           | https://sc-order-management-system.vercel.app      |
+| API                | https://api-production-1800.up.railway.app         |
+| GraphQL Playground | https://api-production-1800.up.railway.app/graphql |
+| Health Check       | https://api-production-1800.up.railway.app/health  |
 
 ---
 
-## Final Checklist
+## Final Checklist ✅
 
-### Code Quality
+### Code Quality ✅
 
-- [ ] No `any` types used inappropriately
-- [ ] All functions have proper TypeScript types
-- [ ] JSDoc comments for public APIs
-- [ ] Consistent code formatting (Prettier)
-- [ ] No ESLint errors
+- [x] No `any` types used inappropriately
+- [x] All functions have proper TypeScript types
+- [x] JSDoc comments for public APIs
+- [x] Consistent code formatting (Prettier)
+- [x] No ESLint errors
 
-### Business Logic
+### Business Logic ✅
 
-- [ ] Discount tiers are correctly implemented
-- [ ] 15% shipping cap uses post-discount amount
-- [ ] Weight is converted from grams to kg correctly
-- [ ] Distance calculation is accurate
+- [x] Discount tiers correctly implemented (1-24: 0%, 25-49: 5%, 50-99: 10%, 100-249: 15%, 250+: 20%)
+- [x] 15% shipping cap uses post-discount amount
+- [x] Weight is converted from grams to kg correctly
+- [x] Distance calculation is accurate (Haversine formula)
 
-### Data Consistency
+### Data Consistency ✅
 
-- [ ] Stock updates use database transactions
-- [ ] Race conditions are prevented
-- [ ] Order numbers are unique
+- [x] Stock updates use database transactions
+- [x] Race conditions prevented (pessimistic locking)
+- [x] Order numbers are unique
 
-### Developer Experience
+### Developer Experience ✅
 
-- [ ] Single command to start everything
-- [ ] Clear error messages
-- [ ] GraphiQL available for testing
-- [ ] Hot reload in development
+- [x] Single command to start everything (`pnpm dev`)
+- [x] Clear error messages
+- [x] GraphiQL available for testing
+- [x] Hot reload in development
 
-### Documentation
+### Documentation ✅
 
-- [ ] README has clear setup instructions
-- [ ] API is self-documented via GraphQL
-- [ ] ADRs explain key decisions
+- [x] README has clear setup instructions
+- [x] API is self-documented via GraphQL
+- [x] ADRs explain key decisions (10 ADRs)
 
 ---
 
 ## Time Breakdown Estimate
 
-| Phase                        | Estimated Time |
-| ---------------------------- | -------------- |
-| Phase 1: Infrastructure      | 30 min ✅      |
-| Phase 2: Database            | 30 min ✅      |
-| Phase 3: Server Setup        | 20 min ✅      |
-| Phase 4: Testing Setup       | 15 min ✅      |
-| Phase 5: Domain Logic        | 75 min ✅      |
-| Phase 6: GraphQL API         | 45 min ✅      |
-| Phase 7: Frontend            | 90 min ✅      |
-| Phase 7.9: Multi-Product     | 60 min ✅      |
-| Phase 8: DevOps & Docs       | 30 min         |
-| Phase 9: Load Testing & Docs | 45 min         |
-| Phase 10: Deployment & CI/CD | 60 min         |
-| **Total**                    | **~8 hours**   |
+| Phase                        | Estimated Time | Status      |
+| ---------------------------- | -------------- | ----------- |
+| Phase 1: Infrastructure      | 30 min         | ✅ Complete |
+| Phase 2: Database            | 30 min         | ✅ Complete |
+| Phase 3: Server Setup        | 20 min         | ✅ Complete |
+| Phase 4: Testing Setup       | 15 min         | ✅ Complete |
+| Phase 5: Domain Logic        | 75 min         | ✅ Complete |
+| Phase 6: GraphQL API         | 45 min         | ✅ Complete |
+| Phase 7: Frontend            | 90 min         | ✅ Complete |
+| Phase 7.9: Multi-Product     | 60 min         | ✅ Complete |
+| Phase 8: DevOps & Docs       | 45 min         | ✅ Complete |
+| Phase 9: Load Testing        | -              | 🟡 Optional |
+| Phase 10: Deployment & CI/CD | 90 min         | ✅ Complete |
+| **Total**                    | **~8 hours**   | **~98%**    |
 
 ---
 
 ## What Would I Do Next (If This Were Real)
 
-1. **Observability**: Add structured logging, metrics (Prometheus), and tracing (OpenTelemetry)
-2. **Rate Limiting**: Protect API from abuse
-3. **Authentication**: Add API key or OAuth for sales reps
-4. **Caching**: Cache warehouse data and precompute common distances
-5. **Event Sourcing**: Track all stock movements for auditing
-6. **CI/CD**: Full deployment pipeline with staging environment
-7. **Horizontal Scaling**: Read replicas, connection pooling optimization
-8. **Advanced Features**: Order cancellation, stock reservations with TTL
+1. **Observability** - Structured logging (Pino JSON), metrics (Prometheus), distributed tracing (OpenTelemetry)
+2. **Rate Limiting** - Protect API from abuse, implement per-client quotas
+3. **Authentication** - API keys or OAuth for sales rep identification
+4. **Caching** - Cache warehouse locations, precompute common shipping routes
+5. **Load Testing** - k6 scripts to validate concurrent order handling (see ADR-005)
+6. **Event Sourcing** - Track all stock movements for auditing and analytics
+7. **Horizontal Scaling** - Read replicas, connection pooling optimization (PgBouncer)
+8. **Advanced Features** - Order cancellation, stock reservations with TTL, email notifications
