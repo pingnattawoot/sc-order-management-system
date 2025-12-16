@@ -253,121 +253,60 @@ Under high load (100+ concurrent orders):
 - Still completes within timeout
 - Consider read replicas for non-transactional queries
 
-## Load Testing Recommendations
+## Load Testing ✅ IMPLEMENTED
+
+> **Status:** Load tests have been implemented and validated. See `load-tests/` directory.
 
 ### Why Load Test Pessimistic Locking?
 
-Pessimistic locking has predictable worst-case behavior, but we should verify:
+Pessimistic locking has predictable worst-case behavior, and we verify:
 
 1. **Lock wait times** under concurrent load
 2. **Rollback behavior** works correctly
 3. **Connection pool** doesn't exhaust
 4. **Timeout handling** is appropriate
 
-### Recommended Tool: k6
+### Implemented Test Scripts
 
-k6 provides excellent support for GraphQL and concurrent testing:
+Two k6 load test scripts are available in `load-tests/`:
 
-```javascript
-// load-tests/order-submission.js
-import http from "k6/http";
-import { check, sleep } from "k6";
-import { Rate, Trend } from "k6/metrics";
+| Script                 | Purpose                     | Run Command            |
+| ---------------------- | --------------------------- | ---------------------- |
+| `order-submission.js`  | Gradual ramp-up (0→50 VUs)  | `pnpm load-test`       |
+| `concurrent-orders.js` | Spike test (200 concurrent) | `pnpm load-test:spike` |
 
-const errorRate = new Rate("errors");
-const orderDuration = new Trend("order_duration");
+**Key Features:**
 
-export const options = {
-  scenarios: {
-    // Scenario 1: Gradual ramp-up
-    ramp_up: {
-      executor: "ramping-vus",
-      startVUs: 0,
-      stages: [
-        { duration: "30s", target: 20 }, // Warm up
-        { duration: "1m", target: 50 }, // Normal load
-        { duration: "30s", target: 100 }, // Push limits
-        { duration: "1m", target: 100 }, // Sustain high load
-        { duration: "30s", target: 0 }, // Cool down
-      ],
-    },
-    // Scenario 2: Spike test
-    spike: {
-      executor: "ramping-vus",
-      startVUs: 0,
-      startTime: "4m", // Start after ramp_up
-      stages: [
-        { duration: "10s", target: 200 }, // Sudden spike
-        { duration: "30s", target: 200 }, // Sustain spike
-        { duration: "10s", target: 0 }, // Drop
-      ],
-    },
-  },
-  thresholds: {
-    http_req_duration: ["p(95)<500"], // 95% under 500ms
-    errors: ["rate<0.05"], // Error rate under 5%
-    order_duration: ["p(99)<1000"], // 99% orders under 1s
-  },
-};
+- Automatic product fetching from API
+- Categorizes expected vs unexpected errors
+- Database integrity check in teardown (verifies no negative stock)
+- Custom metrics: `stock_errors`, `shipping_errors`, `unexpected_errors`
 
-const GRAPHQL_ENDPOINT = "http://localhost:4000/graphql";
+### Pass/Fail Criteria
 
-// Get a random product ID (assumes products are seeded)
-const productIds = JSON.parse(open("./product-ids.json"));
+The **primary validation** is that stock never goes negative:
 
-export default function () {
-  const productId = productIds[Math.floor(Math.random() * productIds.length)];
-  const quantity = Math.floor(Math.random() * 10) + 1; // 1-10 units
+```
+✅ TEST PASSED: All stock values >= 0
+   Pessimistic locking prevented overselling.
+```
 
-  // Random location (roughly UK area for test variety)
-  const lat = 51 + (Math.random() * 5 - 2.5);
-  const lon = -1 + (Math.random() * 4 - 2);
+Expected errors that are NOT test failures:
 
-  const mutation = `
-    mutation SubmitOrder($input: OrderInput!) {
-      submitOrder(input: $input) {
-        orderNumber
-        totalCents
-        status
-      }
-    }
-  `;
+- "Insufficient stock" - Stock depleted, business rule working
+- "Shipping exceeds 15%" - Validation rule working
 
-  const variables = {
-    input: {
-      items: [{ productId, quantity }],
-      latitude: lat,
-      longitude: lon,
-    },
-  };
+### Example Test Run
 
-  const startTime = Date.now();
+```bash
+# Install k6 (macOS)
+brew install k6
 
-  const res = http.post(
-    GRAPHQL_ENDPOINT,
-    JSON.stringify({ query: mutation, variables }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+# Run gradual ramp-up test
+pnpm load-test
 
-  const duration = Date.now() - startTime;
-  orderDuration.add(duration);
-
-  const success = check(res, {
-    "status is 200": (r) => r.status === 200,
-    "no GraphQL errors": (r) => {
-      const body = JSON.parse(r.body);
-      return !body.errors || body.errors.length === 0;
-    },
-    "has order number": (r) => {
-      const body = JSON.parse(r.body);
-      return body.data?.submitOrder?.orderNumber !== undefined;
-    },
-  });
-
-  errorRate.add(!success);
-
-  sleep(Math.random() * 2); // Random think time 0-2s
-}
+# Run spike test
+pnpm load-test:spike
 ```
 
 ### Expected Results

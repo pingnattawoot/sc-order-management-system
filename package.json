@@ -11,6 +11,8 @@
     "build": "pnpm -r build",
     "test": "pnpm --filter api test",
     "test:coverage": "pnpm --filter api test:coverage",
+    "load-test": "k6 run load-tests/order-submission.js",
+    "load-test:spike": "k6 run load-tests/concurrent-orders.js",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "docker:up": "docker-compose up -d",

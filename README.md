@@ -156,15 +156,31 @@ The app will be available at:
 ### Running Tests
 
 ```bash
-# Run all tests
-pnpm --filter api test
+# Run all tests (106 tests)
+pnpm test
 
 # Run with coverage
-pnpm --filter api test:coverage
+pnpm test:coverage
 
 # Run in watch mode
 pnpm --filter api test:watch
 ```
+
+### Load Testing (k6)
+
+Validates pessimistic locking under concurrent load:
+
+```bash
+# Install k6 first: brew install k6
+
+# Gradual load test (0→50 VUs)
+pnpm load-test
+
+# Spike test (50 concurrent VUs)
+pnpm load-test:spike
+```
+
+See [load-tests/README.md](load-tests/README.md) for details.
 
 ---
 
@@ -393,13 +409,13 @@ sc-order-management-system/
 
 If this were a real production system, I would prioritize:
 
-1. **Observability** - Structured logging (Pino), metrics (Prometheus), distributed tracing (OpenTelemetry)
+1. **Observability** - Structured logging (Pino JSON), metrics (Prometheus), distributed tracing (OpenTelemetry)
 2. **Rate Limiting** - Protect API from abuse, implement per-client quotas
 3. **Authentication** - API keys or OAuth for sales rep identification
 4. **Caching** - Cache warehouse locations, precompute common shipping routes
-5. **Load Testing** - k6 scripts to validate concurrent order handling
-6. **Event Sourcing** - Track all stock movements for auditing and analytics
-7. **Horizontal Scaling** - Read replicas, connection pooling optimization (PgBouncer)
+5. **Event Sourcing** - Track all stock movements for auditing and analytics
+6. **Horizontal Scaling** - Read replicas, connection pooling optimization (PgBouncer)
+7. **Advanced Features** - Order cancellation, stock reservations with TTL
 
 ---
 
