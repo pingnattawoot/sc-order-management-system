@@ -126,44 +126,36 @@ A backend system for managing SCOS device orders, built as a technical assessmen
 ### Local Development
 
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/pingnattawoot/sc-order-management-system.git
 cd sc-order-management-system
-
-# Install dependencies
 pnpm install
 
 # Start PostgreSQL
 docker-compose up -d
 
-# Setup database (migrations + seed)
-pnpm --filter api db:push
+# Setup environment and database
+cp apps/api/.env.example apps/api/.env
+pnpm --filter api db:generate
+pnpm --filter api db:migrate
 pnpm --filter api db:seed
-
-# Generate Prisma client
-pnpm --filter api exec prisma generate
 
 # Start development servers
 pnpm dev
 ```
 
-The app will be available at:
-
 - API: http://localhost:4000
-- GraphQL Playground: http://localhost:4000/graphql
-- Frontend: http://localhost:3000 (bonus)
+- GraphQL: http://localhost:4000/graphql
+- Frontend: http://localhost:3000
 
 ### Running Tests
 
 ```bash
-# Run all tests (106 tests)
+# First time: setup test database
+pnpm --filter api db:test:setup
+
+# Run tests
 pnpm test
-
-# Run with coverage
-pnpm test:coverage
-
-# Run in watch mode
-pnpm --filter api test:watch
 ```
 
 ### Load Testing (k6)

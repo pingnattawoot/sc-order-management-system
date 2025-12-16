@@ -20,7 +20,8 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "db:test:setup": "bash scripts/setup-test-db.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
