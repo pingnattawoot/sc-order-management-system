@@ -13,7 +13,43 @@ import cors from '@fastify/cors';
 import Fastify, { FastifyInstance } from 'fastify';
 import { config } from './config/index.js';
 import { createGraphQLServer, GRAPHQL_ENDPOINT } from './graphql/index.js';
-import { checkDatabaseHealth, disconnectPrisma } from './lib/prisma.js';
+import { checkDatabaseHealth, disconnectPrisma, prisma } from './lib/prisma.js';
+
+// Seed data constants
+const SEED_DATA = {
+  products: [
+    {
+      sku: 'SCOS-P1-PRO',
+      name: 'SCOS Station P1 Pro',
+      description: 'ScreenCloud OS Station P1 Pro - A powerful digital signage player',
+      priceInCents: 15000,
+      weightGrams: 365,
+    },
+    {
+      sku: 'SCOS-MOUNT-KIT',
+      name: 'SCOS Mount Kit',
+      description: 'Universal VESA mount kit compatible with all SCOS Station devices',
+      priceInCents: 2500,
+      weightGrams: 120,
+    },
+  ],
+  warehouses: [
+    { name: 'Los Angeles', latitude: 33.9425, longitude: -118.408056 },
+    { name: 'New York', latitude: 40.639722, longitude: -73.778889 },
+    { name: 'São Paulo', latitude: -23.435556, longitude: -46.473056 },
+    { name: 'Paris', latitude: 49.009722, longitude: 2.547778 },
+    { name: 'Warsaw', latitude: 52.165833, longitude: 20.967222 },
+    { name: 'Hong Kong', latitude: 22.308889, longitude: 113.914444 },
+  ],
+  stockLevels: {
+    'Los Angeles': [355, 500],
+    'New York': [578, 750],
+    'São Paulo': [265, 300],
+    'Paris': [694, 850],
+    'Warsaw': [245, 400],
+    'Hong Kong': [419, 600],
+  } as Record<string, number[]>,
+};
 
 /**
  * Build and configure the Fastify server
@@ -35,9 +71,10 @@ export async function buildServer(): Promise<FastifyInstance> {
     },
   });
 
-  // Register CORS
+  // Register CORS - allow all origins for demo purposes
+  // In production, you'd restrict this to specific domains
   await server.register(cors, {
-    origin: config.env.isDev ? true : false, // Allow all origins in dev
+    origin: true, // Allow all origins for demo
     credentials: true,
   });
 
@@ -68,8 +105,84 @@ export async function buildServer(): Promise<FastifyInstance> {
         health: '/health',
         graphql: GRAPHQL_ENDPOINT,
         graphiql: config.env.isDev ? GRAPHQL_ENDPOINT : undefined,
+        resetDemo: '/api/reset-demo',
       },
     });
+  });
+
+  // Reset/Seed endpoint for demo purposes
+  // Usage: POST /api/reset-demo
+  // This resets the database to initial state with seed data
+  server.post('/api/reset-demo', async (_request, reply) => {
+    try {
+      server.log.info('🔄 Resetting database to demo state...');
+
+      // Delete all existing data (in correct order due to foreign keys)
+      await prisma.orderShipment.deleteMany({});
+      await prisma.orderItem.deleteMany({});
+      await prisma.order.deleteMany({});
+      await prisma.warehouseStock.deleteMany({});
+      await prisma.warehouse.deleteMany({});
+      await prisma.product.deleteMany({});
+
+      server.log.info('   ✓ Cleared existing data');
+
+      // Seed products
+      const products = [];
+      for (const productData of SEED_DATA.products) {
+        const product = await prisma.product.create({ data: productData });
+        products.push(product);
+      }
+      server.log.info(`   ✓ Created ${products.length} products`);
+
+      // Seed warehouses
+      const warehouses = [];
+      for (const warehouseData of SEED_DATA.warehouses) {
+        const warehouse = await prisma.warehouse.create({ data: warehouseData });
+        warehouses.push(warehouse);
+      }
+      server.log.info(`   ✓ Created ${warehouses.length} warehouses`);
+
+      // Seed warehouse stocks
+      let stockCount = 0;
+      for (const warehouse of warehouses) {
+        const stockLevels = SEED_DATA.stockLevels[warehouse.name];
+        if (!stockLevels) continue;
+
+        for (let i = 0; i < products.length; i++) {
+          const product = products[i];
+          if (!product) continue;
+          await prisma.warehouseStock.create({
+            data: {
+              warehouseId: warehouse.id,
+              productId: product.id,
+              quantity: stockLevels[i] ?? 0,
+            },
+          });
+          stockCount++;
+        }
+      }
+      server.log.info(`   ✓ Created ${stockCount} stock entries`);
+
+      server.log.info('✅ Database reset complete!');
+
+      return reply.send({
+        success: true,
+        message: 'Database reset to demo state',
+        data: {
+          products: products.length,
+          warehouses: warehouses.length,
+          stockEntries: stockCount,
+        },
+      });
+    } catch (error) {
+      server.log.error(error, 'Failed to reset database');
+      return reply.status(500).send({
+        success: false,
+        message: 'Failed to reset database',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
   });
 
   // GraphQL endpoint (via GraphQL Yoga)

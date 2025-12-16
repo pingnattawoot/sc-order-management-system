@@ -7,10 +7,45 @@
  * - Stock: Monitor warehouse inventory
  */
 
+import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { NewOrderTab, OrdersTab, StockTab } from '@/components/tabs';
 
+// Get API base URL (without /graphql suffix)
+const API_BASE_URL = (import.meta.env.VITE_GRAPHQL_URL || 'http://localhost:4000/graphql').replace('/graphql', '');
+
 function App() {
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetDemo = async () => {
+    if (!confirm('⚠️ This will reset the database to its initial demo state.\n\nAll orders will be deleted and stock levels will be restored.\n\nContinue?')) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/reset-demo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert('✅ Database reset successful!\n\nProducts, warehouses, and stock levels have been restored.\n\nPage will reload.');
+        // Reload the page to refresh all data
+        window.location.reload();
+      } else {
+        alert(`❌ Reset failed: ${data.message}`);
+      }
+    } catch (error) {
+      alert(`❌ Reset failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -26,8 +61,19 @@ function App() {
                 <p className="text-sm text-muted-foreground">Order Management System</p>
               </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Multi-Product Ordering
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                Multi-Product Ordering
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResetDemo}
+                disabled={isResetting}
+                className="text-orange-600 border-orange-300 hover:bg-orange-50"
+              >
+                {isResetting ? '🔄 Resetting...' : '🔄 Reset Demo'}
+              </Button>
             </div>
           </div>
         </div>
