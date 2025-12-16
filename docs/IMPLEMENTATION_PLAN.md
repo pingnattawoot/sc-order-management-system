@@ -407,16 +407,16 @@ TARGET (Multi-Product, Multi-Item):
                 └───────────────┘
 ```
 
-### 7.9.1 Database Schema Migration
+### 7.9.1 Database Schema Migration ✅
 
-- [ ] Create new `WarehouseStock` model (warehouseId, productId, quantity)
-- [ ] Create new `OrderItem` model (orderId, productId, quantity, unitPriceCents, subtotalCents)
-- [ ] Update `Warehouse` model - remove `stock` field, add `stocks` relation
-- [ ] Update `Order` model - remove `quantity`, add `items` relation
-- [ ] Update `OrderShipment` model - change `orderId` to `orderItemId`
-- [ ] Create migration script for existing data
-- [ ] Update seed data to populate WarehouseStock
-- [ ] **COMMIT:** "feat(api): migrate schema to multi-product architecture"
+- [x] Create new `WarehouseStock` model (warehouseId, productId, quantity)
+- [x] Create new `OrderItem` model (orderId, productId, quantity, unitPriceCents, subtotalCents)
+- [x] Update `Warehouse` model - remove `stock` field, add `stocks` relation
+- [x] Update `Order` model - remove `quantity`, add `items` relation
+- [x] Update `OrderShipment` model - change `orderId` to `orderItemId`
+- [x] Create migration script for existing data
+- [x] Update seed data to populate WarehouseStock
+- [x] _(Migration complete: `20251215205446_init_multi_product`)_
 
 **New Schema:**
 
@@ -451,33 +451,33 @@ model OrderItem {
 }
 ```
 
-### 7.9.2 Update Domain Logic
+### 7.9.2 Update Domain Logic ✅
 
-- [ ] Update `WarehouseOptimizer` to accept productId parameter
+- [x] Update `WarehouseOptimizer` to accept productId parameter
   - `optimizeForProduct(productId, quantity, customerLat, customerLng)`
   - Fetch stock from WarehouseStock instead of Warehouse.stock
   - Greedy algorithm still works: nearest warehouse with stock for THAT product
-- [ ] Create new `OrderItemInput` type: `{ productId, quantity }`
-- [ ] Update `OrderInput` to accept `items: OrderItemInput[]` array
-- [ ] Update `verifyOrder()` to process each item independently
+- [x] Create new `OrderItemInput` type: `{ productId, quantity }`
+- [x] Update `OrderInput` to accept `items: OrderItemInput[]` array
+- [x] Update `verifyOrder()` to process each item independently
   - Run optimizer per product
   - Aggregate shipping costs
   - Calculate discount on total order value
-- [ ] Update `submitOrder()` to create OrderItems and link shipments
-- [ ] Update stock deduction to use WarehouseStock
-- [ ] **COMMIT:** "feat(api): update domain logic for multi-item orders"
+- [x] Update `submitOrder()` to create OrderItems and link shipments
+- [x] Update stock deduction to use WarehouseStock
+- [x] _(Domain logic complete with pessimistic locking per product)_
 
-### 7.9.3 Update GraphQL API
+### 7.9.3 Update GraphQL API ✅
 
-- [ ] Add `WarehouseStock` type
-- [ ] Add `OrderItem` type with shipments relation
-- [ ] Update `Warehouse` type - `stocks` instead of `stock`
-- [ ] Add `OrderItemInput` input type
-- [ ] Update `OrderInput` to use `items: [OrderItemInput!]!`
-- [ ] Update `OrderQuote` to include item-level breakdowns
-- [ ] Update queries: `warehouse.stocks`, `order.items`
-- [ ] Update mutations: `verifyOrder`, `submitOrder`
-- [ ] **COMMIT:** "feat(api): update graphql schema for multi-item orders"
+- [x] Add `WarehouseStock` type
+- [x] Add `OrderItem` type with shipments relation
+- [x] Update `Warehouse` type - `stocks` instead of `stock`
+- [x] Add `OrderItemInput` input type
+- [x] Update `OrderInput` to use `items: [OrderItemInput!]!`
+- [x] Update `OrderQuote` to include item-level breakdowns
+- [x] Update queries: `warehouse.stocks`, `order.items`
+- [x] Update mutations: `verifyOrder`, `submitOrder`
+- [x] _(GraphQL schema complete with 358 lines)_
 
 ### 7.9.4 Update Frontend ✅
 

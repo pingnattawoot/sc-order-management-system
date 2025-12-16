@@ -4,16 +4,14 @@ A backend system for managing SCOS device orders, built as a technical assessmen
 
 ## 🌐 Live Demo
 
-| Component              | URL                                                                                    |
-| ---------------------- | -------------------------------------------------------------------------------------- |
-| **Frontend**           | [sc-order-management-system.vercel.app](https://sc-order-management-system.vercel.app) |
-| **API**                | [api-production-1800.up.railway.app](https://api-production-1800.up.railway.app/)      |
-| **GraphQL Playground** | [/graphql](https://api-production-1800.up.railway.app/graphql)                         |
-| **Health Check**       | [/health](https://api-production-1800.up.railway.app/health)                           |
+| Component        | URL                                                                                    |
+| ---------------- | -------------------------------------------------------------------------------------- |
+| **Frontend**     | [sc-order-management-system.vercel.app](https://sc-order-management-system.vercel.app) |
+| **API**          | [api-production-1800.up.railway.app](https://api-production-1800.up.railway.app/)      |
+| **GraphQL**      | [/graphql](https://api-production-1800.up.railway.app/graphql)                         |
+| **Health Check** | [/health](https://api-production-1800.up.railway.app/health)                           |
 
 > 💡 **Tip:** Click the "🔄 Reset Demo" button in the header to restore the database to its initial state.
-
-> ⚠️ **Note:** GraphQL Playground is intentionally enabled in production for this demo to allow reviewers to explore the API schema and run queries directly. In a real production system, introspection would typically be disabled for security.
 
 ---
 
@@ -111,7 +109,7 @@ A backend system for managing SCOS device orders, built as a technical assessmen
 | **Backend**    | Node.js 22, Fastify, TypeScript                     |
 | **GraphQL**    | GraphQL Yoga, Pothos Schema Builder                 |
 | **Database**   | PostgreSQL 16, Prisma 7 (with pg adapter)           |
-| **Testing**    | Vitest (97+ tests)                                  |
+| **Testing**    | Vitest (100+ tests)                                 |
 | **Frontend**   | React 19, Vite, Tailwind CSS v4, shadcn/ui, Leaflet |
 | **Deployment** | Vercel (frontend), Railway (API + DB)               |
 
@@ -307,7 +305,7 @@ query GetOrder {
 
 ## 🧪 Testing Strategy
 
-The project demonstrates a **comprehensive testing approach** with 97+ tests:
+The project demonstrates a **comprehensive testing approach** with 106 tests:
 
 ### Test Categories
 
