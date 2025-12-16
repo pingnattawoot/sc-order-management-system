@@ -6,8 +6,8 @@
 # Stage 1: Build
 FROM node:22.12-alpine AS builder
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.25.0 --activate
+# Install pnpm via npm (corepack has signature issues)
+RUN npm install -g pnpm@9.15.0
 
 WORKDIR /app
 
@@ -31,8 +31,8 @@ RUN pnpm --filter api build
 # Stage 2: Production
 FROM node:22.12-alpine AS runner
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.25.0 --activate
+# Install pnpm via npm
+RUN npm install -g pnpm@9.15.0
 
 WORKDIR /app
 
