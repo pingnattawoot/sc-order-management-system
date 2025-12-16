@@ -7,10 +7,10 @@
  * - Stock: Monitor warehouse inventory
  */
 
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { NewOrderTab, OrdersTab, StockTab } from "@/components/tabs";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 
 // Get API base URL (without /graphql suffix)
 const API_BASE_URL = (
@@ -34,6 +34,7 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/api/reset-demo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
       });
 
       const data = await response.json();
@@ -79,7 +80,7 @@ function App() {
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground hidden sm:inline">
-                Multi-Product Ordering
+                📦
               </span>
               <Button
                 variant="outline"
@@ -88,7 +89,7 @@ function App() {
                 disabled={isResetting}
                 className="text-orange-600 border-orange-300 hover:bg-orange-50"
               >
-                {isResetting ? "🔄 Resetting..." : "🔄 Reset Demo"}
+                {isResetting ? "🔄 Resetting..." : "🔄 Reset Stock"}
               </Button>
             </div>
           </div>

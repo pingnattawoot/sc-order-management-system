@@ -1,10 +1,11 @@
 /**
  * Custom marker for warehouse locations
  *
- * Shows warehouse name, stock level, and optional distance
+ * Shows warehouse name, stock level, and optional distance/shipping cost
  */
 
 import type { Warehouse } from "@/generated/graphql";
+import { formatCurrency } from "@/lib/utils";
 import L from "leaflet";
 import { Marker, Popup } from "react-leaflet";
 
@@ -64,6 +65,8 @@ interface WarehouseMarkerProps {
   isActive?: boolean;
   quantity?: number;
   distance?: number;
+  /** Shipping cost in cents (from API response) */
+  shippingCostCents?: number;
 }
 
 export function WarehouseMarker({
@@ -71,6 +74,7 @@ export function WarehouseMarker({
   isActive = false,
   quantity,
   distance,
+  shippingCostCents,
 }: WarehouseMarkerProps) {
   const stock = getTotalStock(warehouse);
   const stockLevel = getStockLevel(stock);
@@ -83,46 +87,62 @@ export function WarehouseMarker({
   return (
     <Marker position={position} icon={icon}>
       <Popup>
-        <div className="min-w-[180px]">
-          <h3 className="font-bold text-base mb-2">{warehouse.name}</h3>
-          <div className="space-y-1 text-sm">
-            <p>
-              <span className="text-muted-foreground">Total Stock:</span>{" "}
-              <span
-                className={`font-medium ${
-                  stockLevel === "low"
-                    ? "text-red-500"
-                    : stockLevel === "medium"
-                    ? "text-amber-500"
-                    : "text-green-500"
-                }`}
-              >
-                {stock} units
-              </span>
-            </p>
-            {warehouse.stocks && warehouse.stocks.length > 0 && (
-              <div className="text-xs text-muted-foreground">
-                {warehouse.stocks.map((s, i) => (
-                  <div key={i}>
-                    {s?.product?.name}: {s?.quantity ?? 0}
-                  </div>
-                ))}
-              </div>
-            )}
-            {distance !== undefined && (
-              <p>
-                <span className="text-muted-foreground">Distance:</span>{" "}
-                <span className="font-medium">{distance.toFixed(1)} km</span>
-              </p>
-            )}
-            {quantity !== undefined && isActive && (
-              <p className="pt-1 border-t">
-                <span className="text-green-600 font-medium">
-                  Fulfilling: {quantity} units
-                </span>
-              </p>
-            )}
+        <div style={{ minWidth: 180, fontSize: 14, lineHeight: 1.4 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>
+            {warehouse.name}
           </div>
+          <div style={{ color: "#666", marginBottom: 2 }}>
+            Total Stock:{" "}
+            <span
+              style={{
+                fontWeight: 500,
+                color:
+                  stockLevel === "low"
+                    ? "#ef4444"
+                    : stockLevel === "medium"
+                    ? "#f59e0b"
+                    : "#22c55e",
+              }}
+            >
+              {stock} units
+            </span>
+          </div>
+          {warehouse.stocks && warehouse.stocks.length > 0 && (
+            <div style={{ fontSize: 12, color: "#888", marginBottom: 4 }}>
+              {warehouse.stocks.map((s, i) => (
+                <div key={i}>
+                  {s?.product?.name}: {s?.quantity ?? 0}
+                </div>
+              ))}
+            </div>
+          )}
+          {distance !== undefined && (
+            <div style={{ color: "#666" }}>
+              Distance:{" "}
+              <span style={{ fontWeight: 500 }}>{distance.toFixed(1)} km</span>
+            </div>
+          )}
+          {quantity !== undefined && isActive && (
+            <div
+              style={{
+                borderTop: "1px solid #e5e7eb",
+                marginTop: 8,
+                paddingTop: 8,
+              }}
+            >
+              <div style={{ color: "#16a34a", fontWeight: 500 }}>
+                ✓ Fulfilling: {quantity} units
+              </div>
+              {shippingCostCents !== undefined && (
+                <div style={{ color: "#666", marginTop: 2 }}>
+                  Shipping:{" "}
+                  <span style={{ fontWeight: 500, color: "#3b82f6" }}>
+                    {formatCurrency(shippingCostCents)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </Popup>
     </Marker>

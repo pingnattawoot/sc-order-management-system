@@ -5,13 +5,25 @@
  * Updated for multi-item orders
  */
 
-import { useState, useMemo } from 'react';
-import { WarehouseMap } from '@/components/map';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { WarehouseMap } from "@/components/map";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -19,54 +31,22 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+} from "@/components/ui/table";
 import {
   useGetOrdersQuery,
   useGetWarehousesQuery,
   type Order,
-  type Warehouse,
   type ShipmentDetail,
-} from '@/graphql';
-
-// Helper to format cents as currency with comma separators
-const formatCurrency = (cents: number | null | undefined) => {
-  if (cents == null) return '$0.00';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(cents / 100);
-};
-
-// Helper to format numbers with comma separators
-const formatNumber = (num: number | null | undefined) => {
-  if (num == null) return '0';
-  return new Intl.NumberFormat('en-US').format(num);
-};
-
-// Helper to format date
-const formatDate = (dateStr: string | null | undefined) => {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
+  type Warehouse,
+} from "@/graphql";
+import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
+import { useMemo, useState } from "react";
 
 // Status badge colors
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-500',
-  COMPLETED: 'bg-green-500',
-  CANCELLED: 'bg-red-500',
+  PENDING: "bg-yellow-500",
+  COMPLETED: "bg-green-500",
+  CANCELLED: "bg-red-500",
 };
 
 export function OrdersTab() {
@@ -85,11 +65,11 @@ export function OrdersTab() {
   const selectedOrderItems = selectedOrder?.items;
   const activeShipments: ShipmentDetail[] = useMemo(() => {
     if (!selectedOrderItems) return [];
-    
+
     // Flatten shipments from all items and convert to ShipmentDetail format
     return selectedOrderItems.flatMap((item) =>
       (item?.shipments ?? []).map((s) => ({
-        __typename: 'ShipmentDetail' as const,
+        __typename: "ShipmentDetail" as const,
         warehouseId: s?.warehouseId ?? null,
         warehouseName: s?.warehouseName ?? null,
         quantity: s?.quantity ?? null,
@@ -101,7 +81,10 @@ export function OrdersTab() {
 
   // Customer location for selected order
   const customerLocation: [number, number] | null = selectedOrder
-    ? [parseFloat(selectedOrder.customerLatitude ?? '0'), parseFloat(selectedOrder.customerLongitude ?? '0')]
+    ? [
+        parseFloat(selectedOrder.customerLatitude ?? "0"),
+        parseFloat(selectedOrder.customerLongitude ?? "0"),
+      ]
     : null;
 
   return (
@@ -122,7 +105,9 @@ export function OrdersTab() {
       ) : orders.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No orders found. Place your first order!</p>
+            <p className="text-muted-foreground">
+              No orders found. Place your first order!
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -145,25 +130,40 @@ export function OrdersTab() {
               </TableHeader>
               <TableBody>
                 {orders.map((order) => (
-                  <TableRow key={order.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableRow
+                    key={order.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                  >
                     <TableCell className="font-mono font-medium">
                       {order.orderNumber}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(order.createdAt)}
                     </TableCell>
-                    <TableCell className="text-right">{order.items?.length ?? 0}</TableCell>
-                    <TableCell className="text-right">{formatNumber(order.totalQuantity)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(order.subtotalCents)}</TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {(order.discountCents ?? 0) > 0 ? `-${formatCurrency(order.discountCents)}` : '-'}
+                    <TableCell className="text-right">
+                      {order.items?.length ?? 0}
                     </TableCell>
-                    <TableCell className="text-right">{formatCurrency(order.shippingCents)}</TableCell>
+                    <TableCell className="text-right">
+                      {formatNumber(order.totalQuantity)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(order.subtotalCents)}
+                    </TableCell>
+                    <TableCell className="text-right text-green-600">
+                      {(order.discountCents ?? 0) > 0
+                        ? `-${formatCurrency(order.discountCents)}`
+                        : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(order.shippingCents)}
+                    </TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCurrency(order.totalCents)}
                     </TableCell>
                     <TableCell>
-                      <Badge className={statusColors[order.status ?? 'PENDING']}>
+                      <Badge
+                        className={statusColors[order.status ?? "PENDING"]}
+                      >
                         {order.status}
                       </Badge>
                     </TableCell>
@@ -188,7 +188,9 @@ export function OrdersTab() {
       <Sheet open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <SheetContent className="w-[500px] sm:w-[700px] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle className="font-mono">{selectedOrder?.orderNumber}</SheetTitle>
+            <SheetTitle className="font-mono">
+              {selectedOrder?.orderNumber}
+            </SheetTitle>
             <SheetDescription>
               {formatDate(selectedOrder?.createdAt)}
             </SheetDescription>
@@ -211,7 +213,8 @@ export function OrdersTab() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">Order Items</CardTitle>
                   <CardDescription>
-                    {selectedOrder.items?.length ?? 0} item(s), {formatNumber(selectedOrder.totalQuantity)} units total
+                    {selectedOrder.items?.length ?? 0} item(s),{" "}
+                    {formatNumber(selectedOrder.totalQuantity)} units total
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -219,22 +222,37 @@ export function OrdersTab() {
                     {selectedOrder.items?.map((item, i) => (
                       <div key={i} className="p-3 bg-muted rounded">
                         <div className="flex justify-between items-center">
-                          <span className="font-medium">{item?.product?.name ?? 'Unknown Product'}</span>
-                          <span className="font-medium">{formatCurrency(item?.subtotalCents)}</span>
+                          <span className="font-medium">
+                            {item?.product?.name ?? "Unknown Product"}
+                          </span>
+                          <span className="font-medium">
+                            {formatCurrency(item?.subtotalCents)}
+                          </span>
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
-                          {formatNumber(item?.quantity)} × {formatCurrency(item?.unitPriceCents)}
+                          {formatNumber(item?.quantity)} ×{" "}
+                          {formatCurrency(item?.unitPriceCents)}
                         </div>
                         {item?.shipments && item.shipments.length > 0 && (
                           <div className="mt-2 pt-2 border-t space-y-1">
-                            <div className="text-xs font-medium text-muted-foreground">Shipped from:</div>
+                            <div className="text-xs font-medium text-muted-foreground">
+                              Shipped from:
+                            </div>
                             {item.shipments.map((s, si) => (
-                              <div key={si} className="flex justify-between text-xs text-muted-foreground">
+                              <div
+                                key={si}
+                                className="flex justify-between text-xs text-muted-foreground"
+                              >
                                 <span>
-                                  {s?.warehouseName} ({formatNumber(Math.round(parseFloat(s?.distanceKm ?? '0')))} km)
+                                  {s?.warehouseName} (
+                                  {formatNumber(
+                                    Math.round(parseFloat(s?.distanceKm ?? "0"))
+                                  )}{" "}
+                                  km)
                                 </span>
                                 <span>
-                                  {formatNumber(s?.quantity)} units • {formatCurrency(s?.shippingCents)}
+                                  {formatNumber(s?.quantity)} units •{" "}
+                                  {formatCurrency(s?.shippingCents)}
                                 </span>
                               </div>
                             ))}
@@ -259,7 +277,9 @@ export function OrdersTab() {
                   {(selectedOrder.discountCents ?? 0) > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Discount</span>
-                      <span>-{formatCurrency(selectedOrder.discountCents)}</span>
+                      <span>
+                        -{formatCurrency(selectedOrder.discountCents)}
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between">
@@ -284,13 +304,17 @@ export function OrdersTab() {
                     <div>
                       <span className="text-muted-foreground">Latitude:</span>
                       <span className="ml-2 font-mono">
-                        {parseFloat(selectedOrder.customerLatitude ?? '0').toFixed(4)}
+                        {parseFloat(
+                          selectedOrder.customerLatitude ?? "0"
+                        ).toFixed(4)}
                       </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Longitude:</span>
                       <span className="ml-2 font-mono">
-                        {parseFloat(selectedOrder.customerLongitude ?? '0').toFixed(4)}
+                        {parseFloat(
+                          selectedOrder.customerLongitude ?? "0"
+                        ).toFixed(4)}
                       </span>
                     </div>
                   </div>

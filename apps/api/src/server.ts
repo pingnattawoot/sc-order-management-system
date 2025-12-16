@@ -25,13 +25,14 @@ const SEED_DATA = {
       priceInCents: 15000,
       weightGrams: 365,
     },
-    {
-      sku: 'SCOS-MOUNT-KIT',
-      name: 'SCOS Mount Kit',
-      description: 'Universal VESA mount kit compatible with all SCOS Station devices',
-      priceInCents: 2500,
-      weightGrams: 120,
-    },
+    // NOTE: enable this when need to test multiple products
+    // {
+    //   sku: 'SCOS-MOUNT-KIT',
+    //   name: 'SCOS Mount Kit',
+    //   description: 'Universal VESA mount kit compatible with all SCOS Station devices',
+    //   priceInCents: 2500,
+    //   weightGrams: 120,
+    // },
   ],
   warehouses: [
     { name: 'Los Angeles', latitude: 33.9425, longitude: -118.408056 },
@@ -45,8 +46,8 @@ const SEED_DATA = {
     'Los Angeles': [355, 500],
     'New York': [578, 750],
     'São Paulo': [265, 300],
-    'Paris': [694, 850],
-    'Warsaw': [245, 400],
+    Paris: [694, 850],
+    Warsaw: [245, 400],
     'Hong Kong': [419, 600],
   } as Record<string, number[]>,
 };
