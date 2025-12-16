@@ -1,0 +1,10 @@
+# Nixpacks configuration for Railway
+# Specify Node.js version that Prisma supports (22.12+)
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "pnpm-9_x", "openssl"]
+
+[variables]
+NODE_VERSION = "22.12.0"
+NIXPACKS_NODE_VERSION = "22"
+
