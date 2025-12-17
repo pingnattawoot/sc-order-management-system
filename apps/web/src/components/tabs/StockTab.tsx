@@ -83,6 +83,9 @@ export function StockTab() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
     null
   );
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState<string | null>(
+    null
+  );
 
   const { data: warehouseData, loading: warehousesLoading } =
     useGetWarehousesQuery();
@@ -159,75 +162,51 @@ export function StockTab() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <Card>
-          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
-            <CardDescription className="text-xs sm:text-sm">
-              {selectedProduct
-                ? `${selectedProduct.name} Stock`
-                : "Total Global Stock"}
-            </CardDescription>
-            <CardTitle className="text-xl sm:text-3xl">
-              {formatNumber(stats.totalStock)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-6 pt-0">
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              units available
-            </p>
-          </CardContent>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+        <Card className="p-2.5 sm:p-4">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
+            {selectedProduct ? selectedProduct.name : "Total Stock"}
+          </p>
+          <p className="text-lg sm:text-2xl font-bold">
+            {formatNumber(stats.totalStock)}
+          </p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">units</p>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
-            <CardDescription className="text-xs sm:text-sm">
-              Warehouses
-            </CardDescription>
-            <CardTitle className="text-xl sm:text-3xl">
-              {warehouses.length}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-6 pt-0">
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              distribution centers
-            </p>
-          </CardContent>
+        <Card className="p-2.5 sm:p-4">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
+            Warehouses
+          </p>
+          <p className="text-lg sm:text-2xl font-bold">{warehouses.length}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
+            locations
+          </p>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
-            <CardDescription className="text-xs sm:text-sm">
-              Average Stock
-            </CardDescription>
-            <CardTitle className="text-xl sm:text-3xl">
-              {formatNumber(stats.avgStock)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-6 pt-0">
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              units per warehouse
-            </p>
-          </CardContent>
+        <Card className="p-2.5 sm:p-4">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
+            Average
+          </p>
+          <p className="text-lg sm:text-2xl font-bold">
+            {formatNumber(stats.avgStock)}
+          </p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
+            per warehouse
+          </p>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
-            <CardDescription className="text-xs sm:text-sm">
-              Low Stock Alerts
-            </CardDescription>
-            <CardTitle className="text-xl sm:text-3xl">
-              {stats.lowStockWarehouses > 0 ? (
-                <span className="text-red-500">{stats.lowStockWarehouses}</span>
-              ) : (
-                <span className="text-green-500">0</span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-6 pt-0">
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              warehouses below 200 units
-            </p>
-          </CardContent>
+        <Card className="p-2.5 sm:p-4">
+          <p className="text-[10px] sm:text-xs text-muted-foreground">
+            Low Stock
+          </p>
+          <p
+            className={`text-lg sm:text-2xl font-bold ${
+              stats.lowStockWarehouses > 0 ? "text-red-500" : "text-green-500"
+            }`}
+          >
+            {stats.lowStockWarehouses}
+          </p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground">alerts</p>
         </Card>
       </div>
 
@@ -241,6 +220,8 @@ export function StockTab() {
           warehouses={warehouses}
           height="clamp(250px, 40vh, 400px)"
           interactive={true}
+          selectedWarehouseId={selectedWarehouseId}
+          onWarehouseSelect={setSelectedWarehouseId}
         />
       )}
 
@@ -287,9 +268,23 @@ export function StockTab() {
                 <TableBody>
                   {warehouseStocks.map(({ warehouse, stock }) => {
                     const level = getStockLevel(stock);
+                    const isSelected = selectedWarehouseId === warehouse.id;
                     return (
-                      <TableRow key={warehouse.id}>
+                      <TableRow
+                        key={warehouse.id}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected
+                            ? "bg-yellow-100 hover:bg-yellow-100 dark:bg-yellow-900/30"
+                            : "hover:bg-muted/50"
+                        }`}
+                        onClick={() =>
+                          setSelectedWarehouseId(
+                            isSelected ? null : warehouse.id ?? null
+                          )
+                        }
+                      >
                         <TableCell className="font-medium text-sm whitespace-nowrap">
+                          {isSelected && <span className="mr-1">📍</span>}
                           {warehouse.name}
                         </TableCell>
                         <TableCell className="text-muted-foreground font-mono text-xs sm:text-sm hidden md:table-cell">

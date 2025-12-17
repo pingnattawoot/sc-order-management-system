@@ -102,6 +102,8 @@ interface WarehouseMapProps {
   activeShipments?: ShipmentDetail[];
   onLocationSelect?: (lat: number, lng: number) => void;
   onCustomerMarkerClick?: () => void;
+  onWarehouseSelect?: (warehouseId: string | null) => void;
+  selectedWarehouseId?: string | null;
   height?: string;
   interactive?: boolean;
   isOrderValid?: boolean; // Controls line color: green for valid, red for invalid
@@ -114,6 +116,8 @@ export function WarehouseMap({
   activeShipments = [],
   onLocationSelect,
   onCustomerMarkerClick,
+  onWarehouseSelect,
+  selectedWarehouseId,
   height = "500px",
   interactive = true,
   isOrderValid = true,
@@ -223,7 +227,9 @@ export function WarehouseMap({
                 key={warehouse.id}
                 warehouse={warehouse}
                 isActive={activeWarehouseIds.has(warehouse.id)}
+                isSelected={selectedWarehouseId === warehouse.id}
                 shipments={warehouseShipmentsMap.get(warehouse.id)}
+                onSelect={onWarehouseSelect}
               />
             )
         )}
