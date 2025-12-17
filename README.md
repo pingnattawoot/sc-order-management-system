@@ -121,8 +121,10 @@ flowchart TB
 ### Prerequisites
 
 - Node.js 22+
-- pnpm 9+
+- pnpm 10+ (enable via corepack: `corepack enable`)
 - Docker (for local PostgreSQL)
+
+> 💡 **pnpm via Corepack:** Node.js includes [Corepack](https://nodejs.org/api/corepack.html) which manages package managers. Run `corepack enable` once to enable pnpm without global installation.
 
 ### Local Development
 
