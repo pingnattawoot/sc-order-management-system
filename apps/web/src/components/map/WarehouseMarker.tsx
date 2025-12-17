@@ -6,7 +6,9 @@
 
 import type { ShipmentDetail, Warehouse } from "@/generated/graphql";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import type { Marker as LeafletMarker } from "leaflet";
 import L from "leaflet";
+import { useEffect, useRef } from "react";
 import { Marker, Popup } from "react-leaflet";
 
 // Compute total stock across all products in a warehouse
@@ -105,6 +107,15 @@ export function WarehouseMarker({
     parseFloat(warehouse.longitude ?? "0"),
   ];
 
+  const markerRef = useRef<LeafletMarker>(null);
+
+  // Open popup when selected (e.g., from table row click)
+  useEffect(() => {
+    if (isSelected && markerRef.current) {
+      markerRef.current.openPopup();
+    }
+  }, [isSelected]);
+
   const handleClick = () => {
     if (onSelect && warehouse.id) {
       // Toggle selection: if already selected, deselect; otherwise select
@@ -114,6 +125,7 @@ export function WarehouseMarker({
 
   return (
     <Marker
+      ref={markerRef}
       position={position}
       icon={icon}
       eventHandlers={{

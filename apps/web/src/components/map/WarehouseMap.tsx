@@ -96,6 +96,33 @@ function MapClickHandler({
   return null;
 }
 
+// Component to fly to a selected warehouse
+function FlyToWarehouse({
+  warehouses,
+  selectedWarehouseId,
+}: {
+  warehouses: Warehouse[];
+  selectedWarehouseId?: string | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!selectedWarehouseId) return;
+
+    const warehouse = warehouses.find((w) => w.id === selectedWarehouseId);
+    if (!warehouse) return;
+
+    const lat = parseFloat(warehouse.latitude ?? "0");
+    const lng = parseFloat(warehouse.longitude ?? "0");
+
+    map.flyTo([lat, lng], 4, {
+      duration: 0.8,
+    });
+  }, [map, warehouses, selectedWarehouseId]);
+
+  return null;
+}
+
 interface WarehouseMapProps {
   warehouses: Warehouse[];
   customerLocation?: [number, number] | null;
@@ -198,6 +225,11 @@ export function WarehouseMap({
           warehouses={warehouses}
           customerLocation={fitToShipments ? customerLocation : undefined}
           activeWarehouseIds={fitToShipments ? activeWarehouseIds : undefined}
+        />
+
+        <FlyToWarehouse
+          warehouses={warehouses}
+          selectedWarehouseId={selectedWarehouseId}
         />
 
         {interactive && <MapClickHandler onLocationSelect={onLocationSelect} />}
