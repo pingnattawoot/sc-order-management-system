@@ -75,27 +75,29 @@ function App() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xl">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-primary-foreground font-bold text-lg sm:text-xl">
                   SC
                 </span>
               </div>
-              <div>
-                <h1 className="text-xl font-bold">ScreenCloud OMS</h1>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl font-bold truncate">
+                  ScreenCloud OMS
+                </h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
                   Order Management System
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center flex-shrink-0">
               <Select
                 disabled={isResetting}
                 onValueChange={(value) => handleResetDemo(parseInt(value))}
               >
-                <SelectTrigger className="w-[180px] text-orange-600 border-orange-300 hover:bg-orange-50">
+                <SelectTrigger className="w-[120px] sm:w-[180px] text-orange-600 border-orange-300 hover:bg-orange-50 text-xs sm:text-sm">
                   <SelectValue
                     placeholder={
                       isResetting ? "🔄 Resetting..." : "🔄 Reset Stock"
@@ -113,18 +115,28 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="new-order" className="space-y-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <Tabs defaultValue="new-order" className="space-y-4 sm:space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="new-order" className="flex items-center gap-2">
+            <TabsTrigger
+              value="new-order"
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
+            >
               <span>🛒</span>
-              <span>New Order</span>
+              <span className="hidden xs:inline sm:inline">New Order</span>
+              <span className="xs:hidden sm:hidden">Order</span>
             </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center gap-2">
+            <TabsTrigger
+              value="orders"
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
+            >
               <span>📋</span>
               <span>Orders</span>
             </TabsTrigger>
-            <TabsTrigger value="stock" className="flex items-center gap-2">
+            <TabsTrigger
+              value="stock"
+              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
+            >
               <span>📦</span>
               <span>Stock</span>
             </TabsTrigger>

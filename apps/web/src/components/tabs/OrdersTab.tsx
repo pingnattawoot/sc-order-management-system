@@ -7,7 +7,6 @@
 
 import { WarehouseMap } from "@/components/map";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -88,11 +87,11 @@ export function OrdersTab() {
     : null;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold">Order History</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-xl sm:text-2xl font-bold">Order History</h2>
+        <p className="text-sm sm:text-base text-muted-foreground">
           View all orders and their fulfillment details
         </p>
       </div>
@@ -112,81 +111,89 @@ export function OrdersTab() {
         </Card>
       ) : (
         <Card>
-          <ScrollArea className="h-[600px]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order #</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Items</TableHead>
-                  <TableHead className="text-right">Qty</TableHead>
-                  <TableHead className="text-right">Subtotal</TableHead>
-                  <TableHead className="text-right">Discount</TableHead>
-                  <TableHead className="text-right">Shipping</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((order) => (
-                  <TableRow
-                    key={order.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                  >
-                    <TableCell className="font-mono font-medium">
-                      {order.orderNumber}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(order.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {order.items?.length ?? 0}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatNumber(order.totalQuantity)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(order.subtotalCents)}
-                    </TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {(order.discountCents ?? 0) > 0
-                        ? `-${formatCurrency(order.discountCents)}`
-                        : "-"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(order.shippingCents)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(order.totalCents)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={statusColors[order.status ?? "PENDING"]}
-                      >
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        View
-                      </Button>
-                    </TableCell>
+          <ScrollArea className="h-[400px] sm:h-[600px]">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Order #</TableHead>
+                    <TableHead className="hidden sm:table-cell">Date</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">
+                      Items
+                    </TableHead>
+                    <TableHead className="text-right whitespace-nowrap">
+                      Qty
+                    </TableHead>
+                    <TableHead className="text-right hidden lg:table-cell">
+                      Subtotal
+                    </TableHead>
+                    <TableHead className="text-right hidden lg:table-cell">
+                      Discount
+                    </TableHead>
+                    <TableHead className="text-right hidden md:table-cell">
+                      Shipping
+                    </TableHead>
+                    <TableHead className="text-right whitespace-nowrap">
+                      Total
+                    </TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedOrder(order)}
+                    >
+                      <TableCell className="font-mono font-medium text-xs sm:text-sm whitespace-nowrap">
+                        {order.orderNumber}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden sm:table-cell text-xs sm:text-sm">
+                        {formatDate(order.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right hidden md:table-cell">
+                        {order.items?.length ?? 0}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatNumber(order.totalQuantity)}
+                      </TableCell>
+                      <TableCell className="text-right hidden lg:table-cell">
+                        {formatCurrency(order.subtotalCents)}
+                      </TableCell>
+                      <TableCell className="text-right text-green-600 hidden lg:table-cell">
+                        {(order.discountCents ?? 0) > 0
+                          ? `-${formatCurrency(order.discountCents)}`
+                          : "-"}
+                      </TableCell>
+                      <TableCell className="text-right hidden md:table-cell">
+                        {formatCurrency(order.shippingCents)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium whitespace-nowrap">
+                        {formatCurrency(order.totalCents)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={`${
+                            statusColors[order.status ?? "PENDING"]
+                          } text-xs`}
+                        >
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </ScrollArea>
         </Card>
       )}
 
       {/* Order Detail Sheet */}
       <Sheet open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <SheetContent className="w-[500px] sm:w-[700px] overflow-y-auto">
+        <SheetContent className="w-full sm:w-[500px] md:w-[700px] max-w-full overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="font-mono">
               {selectedOrder?.orderNumber}

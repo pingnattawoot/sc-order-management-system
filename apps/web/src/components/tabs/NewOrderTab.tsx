@@ -269,23 +269,23 @@ export function NewOrderTab() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h2 className="text-2xl font-bold">Place New Order</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold">Place New Order</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Click anywhere on the map to select delivery location
           </p>
         </div>
-        <Badge variant="outline" className="text-lg px-4 py-2">
+        <Badge variant="outline" className="text-sm sm:text-lg px-3 sm:px-4 py-1 sm:py-2 w-fit">
           {formatNumber(totalStock)} units available
         </Badge>
       </div>
 
       {/* Map */}
       {warehousesLoading || productsLoading ? (
-        <div className="h-[500px] flex items-center justify-center bg-muted rounded-lg">
+        <div className="h-[300px] sm:h-[400px] md:h-[500px] flex items-center justify-center bg-muted rounded-lg">
           <p className="text-muted-foreground">Loading...</p>
         </div>
       ) : (
@@ -296,7 +296,7 @@ export function NewOrderTab() {
           onLocationSelect={handleLocationSelect}
           onCustomerMarkerClick={() => setIsSheetOpen(true)}
           isOrderValid={quote?.isValid ?? true}
-          height="500px"
+          height="clamp(300px, 50vh, 500px)"
         />
       )}
 
@@ -304,7 +304,7 @@ export function NewOrderTab() {
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent
           transparentOverlay
-          className="overflow-y-auto w-[400px] sm:w-[540px]"
+          className="overflow-y-auto w-full sm:w-[400px] md:w-[540px] max-w-full"
         >
           <SheetHeader className="p-0">
             <SheetTitle>Order Details</SheetTitle>
