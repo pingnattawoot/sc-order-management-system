@@ -6,7 +6,7 @@ services:
     container_name: sc-oms-postgres
     restart: unless-stopped
     ports:
-      - '5432:5432'
+      - '54320:5432'  # Use 54320 to avoid conflicts with local PostgreSQL
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
