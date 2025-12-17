@@ -121,12 +121,27 @@ export function NewOrderTab() {
 
   const totalStock = warehouseData?.totalStock ?? 0;
 
-  // Add a new item to the order
+  // Get product IDs already used in the order
+  const usedProductIds = useMemo(
+    () => new Set(orderItems.map((item) => item.productId)),
+    [orderItems]
+  );
+
+  // Get available products (not yet added to order)
+  const availableProducts = useMemo(
+    () => products.filter((p) => p.id && !usedProductIds.has(p.id)),
+    [products, usedProductIds]
+  );
+
+  // Check if all products have been added
+  const allProductsAdded = availableProducts.length === 0;
+
+  // Add a new item to the order (uses first available product)
   const handleAddItem = () => {
-    if (products.length > 0 && products[0].id) {
+    if (availableProducts.length > 0 && availableProducts[0].id) {
       setOrderItems([
         ...orderItems,
-        { productId: products[0].id, quantity: 1 },
+        { productId: availableProducts[0].id, quantity: 1 },
       ]);
     }
   };
@@ -154,12 +169,16 @@ export function NewOrderTab() {
       setSelectedLocation([lat, lng]);
       setQuote(null);
       setIsSheetOpen(true);
-      // Add default item if none exist
-      if (orderItems.length === 0 && products.length > 0 && products[0].id) {
-        setOrderItems([{ productId: products[0].id, quantity: 1 }]);
+      // Add default item if none exist (use first available product)
+      if (
+        orderItems.length === 0 &&
+        availableProducts.length > 0 &&
+        availableProducts[0].id
+      ) {
+        setOrderItems([{ productId: availableProducts[0].id, quantity: 1 }]);
       }
     },
-    [orderItems.length, products]
+    [orderItems.length, availableProducts]
   );
 
   // Handle verify
@@ -278,7 +297,10 @@ export function NewOrderTab() {
             Click anywhere on the map to select delivery location
           </p>
         </div>
-        <Badge variant="outline" className="text-sm sm:text-lg px-3 sm:px-4 py-1 sm:py-2 w-fit">
+        <Badge
+          variant="outline"
+          className="text-sm sm:text-lg px-3 sm:px-4 py-1 sm:py-2 w-fit"
+        >
           {formatNumber(totalStock)} units available
         </Badge>
       </div>
@@ -313,23 +335,23 @@ export function NewOrderTab() {
             </SheetDescription>
           </SheetHeader>
 
-          <div className="space-y-4 mt-4">
+          <div className="space-y-3 sm:space-y-4 mt-3 sm:mt-4">
             {/* Location Info */}
             <Card>
-              <CardHeader className="pb-2">
+              <CardHeader className="pb-2 px-3 sm:px-6">
                 <CardTitle className="text-sm">Delivery Location</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2 text-sm">
+              <CardContent className="px-3 sm:px-6">
+                <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                   <div>
-                    <span className="text-muted-foreground">Latitude:</span>
-                    <span className="ml-2 font-mono">
+                    <span className="text-muted-foreground">Lat:</span>
+                    <span className="ml-1 sm:ml-2 font-mono">
                       {selectedLocation?.[0].toFixed(4)}
                     </span>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Longitude:</span>
-                    <span className="ml-2 font-mono">
+                    <span className="text-muted-foreground">Lng:</span>
+                    <span className="ml-1 sm:ml-2 font-mono">
                       {selectedLocation?.[1].toFixed(4)}
                     </span>
                   </div>
@@ -339,15 +361,26 @@ export function NewOrderTab() {
 
             {/* Order Items */}
             <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
+              <CardHeader className="pb-2 px-3 sm:px-6">
+                <div className="flex items-center justify-between gap-2">
                   <CardTitle className="text-sm">Order Items</CardTitle>
-                  <Button variant="outline" size="sm" onClick={handleAddItem}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddItem}
+                    disabled={allProductsAdded}
+                    title={
+                      allProductsAdded
+                        ? "All products have been added"
+                        : "Add another product"
+                    }
+                    className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap"
+                  >
                     + Add Item
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 px-3 sm:px-6">
                 {orderItems.length === 0 ? (
                   <p className="text-muted-foreground text-sm text-center py-4">
                     No items added yet. Click "Add Item" to start.
@@ -355,43 +388,54 @@ export function NewOrderTab() {
                 ) : (
                   orderItems.map((item, index) => {
                     const product = getProduct(item.productId);
+                    // Get products available for this dropdown (current + unused by other items)
+                    const otherUsedProductIds = new Set(
+                      orderItems
+                        .filter((_, i) => i !== index)
+                        .map((i) => i.productId)
+                    );
+                    const selectableProducts = products.filter(
+                      (p) =>
+                        p.id === item.productId ||
+                        (p.id && !otherUsedProductIds.has(p.id))
+                    );
                     return (
                       <div
                         key={index}
-                        className="p-3 border rounded-lg space-y-3"
+                        className="p-2 sm:p-3 border rounded-lg space-y-2 sm:space-y-3 relative"
                       >
+                        {/* Delete button - positioned absolute on mobile */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-1 right-1 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveItem(index)}
+                        >
+                          ×
+                        </Button>
+
                         {/* Product */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <Label className="text-xs text-muted-foreground mb-1 block">
-                              Product
-                            </Label>
-                            <Select
-                              value={item.productId}
-                              onValueChange={(value: string) =>
-                                handleUpdateItem(index, { productId: value })
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select product" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {products.map((p) => (
-                                  <SelectItem key={p.id} value={p.id!}>
-                                    {p.name} ({formatCurrency(p.priceInCents)})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive mt-5"
-                            onClick={() => handleRemoveItem(index)}
+                        <div className="pr-6">
+                          <Label className="text-xs text-muted-foreground mb-1 block">
+                            Product
+                          </Label>
+                          <Select
+                            value={item.productId}
+                            onValueChange={(value: string) =>
+                              handleUpdateItem(index, { productId: value })
+                            }
                           >
-                            ×
-                          </Button>
+                            <SelectTrigger className="text-sm">
+                              <SelectValue placeholder="Select product" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {selectableProducts.map((p) => (
+                                <SelectItem key={p.id} value={p.id!}>
+                                  {p.name} ({formatCurrency(p.priceInCents)})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         {/* Quantity */}
@@ -409,12 +453,13 @@ export function NewOrderTab() {
                               })
                             }
                             placeholder="Enter quantity"
+                            className="text-sm"
                           />
                         </div>
 
                         {/* Subtotal */}
                         {product && item.quantity > 0 && (
-                          <div className="text-sm text-muted-foreground pt-1 border-t">
+                          <div className="text-xs sm:text-sm text-muted-foreground pt-1 border-t">
                             {formatNumber(item.quantity)} ×{" "}
                             {formatCurrency(product.priceInCents)} ={" "}
                             <span className="font-medium text-foreground">
@@ -430,8 +475,10 @@ export function NewOrderTab() {
                 )}
                 {orderItems.length > 0 && (
                   <div className="flex justify-between pt-2 border-t">
-                    <span className="text-sm font-medium">Total Items:</span>
-                    <span className="text-sm">
+                    <span className="text-xs sm:text-sm font-medium">
+                      Total Items:
+                    </span>
+                    <span className="text-xs sm:text-sm">
                       {formatNumber(totalOrderQuantity)} units
                     </span>
                   </div>
@@ -469,25 +516,33 @@ export function NewOrderTab() {
                 {/* Item-level Results */}
                 {quote.items && quote.items.length > 0 && (
                   <Card>
-                    <CardHeader className="pb-2">
+                    <CardHeader className="pb-2 px-3 sm:px-6">
                       <CardTitle className="text-sm">Item Breakdown</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-6">
                       {quote.items.map((item, i) => (
-                        <div key={i} className="p-2 bg-muted rounded text-sm">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium">
+                        <div
+                          key={i}
+                          className="p-2 bg-muted rounded text-xs sm:text-sm"
+                        >
+                          <div className="flex justify-between items-center gap-2">
+                            <span className="font-medium truncate">
                               {item?.productName}
                             </span>
                             {item?.canFulfill ? (
                               <Badge
                                 variant="outline"
-                                className="text-green-600"
+                                className="text-green-600 text-xs shrink-0"
                               >
                                 ✓
                               </Badge>
                             ) : (
-                              <Badge variant="destructive">✗</Badge>
+                              <Badge
+                                variant="destructive"
+                                className="text-xs shrink-0"
+                              >
+                                ✗
+                              </Badge>
                             )}
                           </div>
                           <div className="text-muted-foreground text-xs mt-1">
@@ -505,16 +560,18 @@ export function NewOrderTab() {
                               {item.shipments.map((s, si) => (
                                 <div
                                   key={si}
-                                  className="text-xs flex justify-between text-muted-foreground"
+                                  className="text-xs flex justify-between text-muted-foreground gap-1"
                                 >
-                                  <span>
+                                  <span className="truncate">
                                     {s?.warehouseName} (
                                     {formatNumber(
                                       Math.round(s?.distanceKm ?? 0)
                                     )}
                                     km)
                                   </span>
-                                  <span>{formatNumber(s?.quantity)} units</span>
+                                  <span className="whitespace-nowrap">
+                                    {formatNumber(s?.quantity)} units
+                                  </span>
                                 </div>
                               ))}
                             </div>
@@ -527,47 +584,51 @@ export function NewOrderTab() {
 
                 {/* Pricing Breakdown */}
                 <Card>
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-2 px-3 sm:px-6">
                     <CardTitle className="text-sm">Pricing Summary</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between">
+                  <CardContent className="space-y-2 text-xs sm:text-sm px-3 sm:px-6">
+                    <div className="flex justify-between gap-2">
                       <span>
                         Subtotal ({formatNumber(quote.totalQuantity)} items)
                       </span>
-                      <span>{formatCurrency(quote.subtotalCents)}</span>
+                      <span className="whitespace-nowrap">
+                        {formatCurrency(quote.subtotalCents)}
+                      </span>
                     </div>
                     {(quote.discount?.discountPercentage ?? 0) > 0 && (
-                      <div className="flex justify-between text-green-600">
-                        <span>Discount ({quote.discount?.tierName})</span>
-                        <span>
+                      <div className="flex justify-between text-green-600 gap-2">
+                        <span className="truncate">
+                          Discount ({quote.discount?.tierName})
+                        </span>
+                        <span className="whitespace-nowrap">
                           -{formatCurrency(quote.discount?.discountAmountCents)}
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between">
+                    <div className="flex justify-between gap-2">
                       <span>Shipping</span>
                       <span
-                        className={
+                        className={`whitespace-nowrap ${
                           !quote.shippingValidity?.isValid
                             ? "text-destructive"
                             : ""
-                        }
+                        }`}
                       >
                         {formatCurrency(quote.totalShippingCostCents)}
                         {!quote.shippingValidity?.isValid && (
                           <span className="ml-1 text-xs">
-                            (exceeds{" "}
+                            (
                             {quote.shippingValidity?.shippingPercentage?.toFixed(
-                              1
+                              0
                             )}
-                            % limit)
+                            %)
                           </span>
                         )}
                       </span>
                     </div>
                     <Separator />
-                    <div className="flex justify-between font-bold text-base">
+                    <div className="flex justify-between font-bold text-sm sm:text-base">
                       <span>Total</span>
                       <span>{formatCurrency(quote.grandTotalCents)}</span>
                     </div>

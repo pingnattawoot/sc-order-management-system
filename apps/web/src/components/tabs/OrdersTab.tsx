@@ -206,14 +206,16 @@ export function OrdersTab() {
           {selectedOrder && (
             <div className="mt-6 space-y-6">
               {/* Map - fit to customer and active warehouses */}
-              <WarehouseMap
-                warehouses={warehouses}
-                customerLocation={customerLocation}
-                activeShipments={activeShipments}
-                height="300px"
-                interactive={false}
-                fitToShipments={true}
-              />
+              <div className="relative z-[10001]">
+                <WarehouseMap
+                  warehouses={warehouses}
+                  customerLocation={customerLocation}
+                  activeShipments={activeShipments}
+                  height="300px"
+                  interactive={true}
+                  fitToShipments={true}
+                />
+              </div>
 
               {/* Order Items */}
               <Card>

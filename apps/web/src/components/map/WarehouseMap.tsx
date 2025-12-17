@@ -5,20 +5,30 @@
  * Uses Leaflet with OpenStreetMap tiles.
  */
 
+import type { LatLngBounds, LatLngBoundsExpression } from "leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo } from "react";
 import {
   MapContainer,
+  Polyline,
   TileLayer,
   useMap,
   useMapEvents,
-  Polyline,
 } from "react-leaflet";
-import type { LatLngBoundsExpression } from "leaflet";
-import "leaflet/dist/leaflet.css";
 
-import type { Warehouse, ShipmentDetail } from "@/generated/graphql";
-import { WarehouseMarker } from "./WarehouseMarker";
+// World bounds to prevent panning outside the map
+const WORLD_BOUNDS: LatLngBounds = L.latLngBounds(
+  L.latLng(-85, -180), // Southwest corner
+  L.latLng(85, 180) // Northeast corner
+);
+
+const MIN_ZOOM = 2;
+const MAX_ZOOM = 18;
+
+import type { ShipmentDetail, Warehouse } from "@/generated/graphql";
 import { CustomerMarker } from "./CustomerMarker";
+import { WarehouseMarker } from "./WarehouseMarker";
 
 // Component to fit map bounds to warehouses and optionally customer location
 function FitBounds({
@@ -184,6 +194,10 @@ export function WarehouseMap({
       <MapContainer
         center={[20, 0]}
         zoom={2}
+        minZoom={MIN_ZOOM}
+        maxZoom={MAX_ZOOM}
+        maxBounds={WORLD_BOUNDS}
+        maxBoundsViscosity={1.0}
         style={{ height: "100%", width: "100%" }}
         scrollWheelZoom={interactive}
         dragging={interactive}

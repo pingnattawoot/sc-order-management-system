@@ -78,7 +78,7 @@ function App() {
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#ffcf03] rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="text-primary-foreground font-bold text-lg sm:text-xl">
                   SC
                 </span>
