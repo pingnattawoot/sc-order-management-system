@@ -126,34 +126,13 @@ export function WarehouseMap({
     );
   }, [activeShipments]);
 
-  // Create shipment quantity map
-  const shipmentQuantityMap = useMemo(() => {
-    const map = new Map<string, number>();
+  // Group shipments by warehouse (a warehouse can fulfill multiple products)
+  const warehouseShipmentsMap = useMemo(() => {
+    const map = new Map<string, ShipmentDetail[]>();
     activeShipments.forEach((s) => {
-      if (s.warehouseId && s.quantity != null) {
-        map.set(s.warehouseId, s.quantity);
-      }
-    });
-    return map;
-  }, [activeShipments]);
-
-  // Create shipment distance map
-  const shipmentDistanceMap = useMemo(() => {
-    const map = new Map<string, number>();
-    activeShipments.forEach((s) => {
-      if (s.warehouseId && s.distanceKm != null) {
-        map.set(s.warehouseId, s.distanceKm);
-      }
-    });
-    return map;
-  }, [activeShipments]);
-
-  // Create shipment shipping cost map
-  const shipmentShippingCostMap = useMemo(() => {
-    const map = new Map<string, number>();
-    activeShipments.forEach((s) => {
-      if (s.warehouseId && s.shippingCostCents != null) {
-        map.set(s.warehouseId, s.shippingCostCents);
+      if (s.warehouseId) {
+        const existing = map.get(s.warehouseId) ?? [];
+        map.set(s.warehouseId, [...existing, s]);
       }
     });
     return map;
@@ -206,8 +185,9 @@ export function WarehouseMap({
         className={interactive ? "[&_.leaflet-container]:cursor-crosshair" : ""}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
         />
 
         <FitBounds
@@ -243,9 +223,7 @@ export function WarehouseMap({
                 key={warehouse.id}
                 warehouse={warehouse}
                 isActive={activeWarehouseIds.has(warehouse.id)}
-                quantity={shipmentQuantityMap.get(warehouse.id)}
-                distance={shipmentDistanceMap.get(warehouse.id)}
-                shippingCostCents={shipmentShippingCostMap.get(warehouse.id)}
+                shipments={warehouseShipmentsMap.get(warehouse.id)}
               />
             )
         )}

@@ -4,7 +4,7 @@
  * Shows warehouse name, stock level, and optional distance/shipping cost
  */
 
-import type { Warehouse } from "@/generated/graphql";
+import type { ShipmentDetail, Warehouse } from "@/generated/graphql";
 import { formatCurrency } from "@/lib/utils";
 import L from "leaflet";
 import { Marker, Popup } from "react-leaflet";
@@ -63,19 +63,26 @@ const getStockLevel = (stock: number): "high" | "medium" | "low" => {
 interface WarehouseMarkerProps {
   warehouse: Warehouse;
   isActive?: boolean;
-  quantity?: number;
-  distance?: number;
-  /** Shipping cost in cents (from API response) */
-  shippingCostCents?: number;
+  /** Shipments from this warehouse (can be multiple for multi-product orders) */
+  shipments?: ShipmentDetail[];
 }
 
 export function WarehouseMarker({
   warehouse,
   isActive = false,
-  quantity,
-  distance,
-  shippingCostCents,
+  shipments = [],
 }: WarehouseMarkerProps) {
+  // Calculate aggregated values from shipments
+  const totalQuantity = shipments.reduce(
+    (sum, s) => sum + (s.quantity ?? 0),
+    0
+  );
+  const totalShippingCents = shipments.reduce(
+    (sum, s) => sum + (s.shippingCostCents ?? 0),
+    0
+  );
+  // Use distance from first shipment (all shipments from same warehouse have same distance)
+  const distance = shipments.length > 0 ? shipments[0].distanceKm : undefined;
   const stock = getTotalStock(warehouse);
   const stockLevel = getStockLevel(stock);
   const icon = createWarehouseIcon(isActive, stockLevel);
@@ -116,13 +123,13 @@ export function WarehouseMarker({
               ))}
             </div>
           )}
-          {distance !== undefined && (
+          {distance !== undefined && distance !== null && (
             <div style={{ color: "#666" }}>
               Distance:{" "}
               <span style={{ fontWeight: 500 }}>{distance.toFixed(1)} km</span>
             </div>
           )}
-          {quantity !== undefined && isActive && (
+          {shipments.length > 0 && isActive && (
             <div
               style={{
                 borderTop: "1px solid #e5e7eb",
@@ -130,14 +137,52 @@ export function WarehouseMarker({
                 paddingTop: 8,
               }}
             >
-              <div style={{ color: "#16a34a", fontWeight: 500 }}>
-                ✓ Fulfilling: {quantity} units
+              <div
+                style={{ color: "#16a34a", fontWeight: 600, marginBottom: 4 }}
+              >
+                ✓ Fulfilling Order:
               </div>
-              {shippingCostCents !== undefined && (
-                <div style={{ color: "#666", marginTop: 2 }}>
+              {shipments.map((s, i) => (
+                <div
+                  key={i}
+                  style={{ color: "#666", fontSize: 12, marginLeft: 8 }}
+                >
+                  • {s.quantity} units
+                  {s.shippingCostCents !== undefined &&
+                    s.shippingCostCents !== null && (
+                      <span style={{ color: "#888" }}>
+                        {" "}
+                        ({formatCurrency(s.shippingCostCents)})
+                      </span>
+                    )}
+                </div>
+              ))}
+              {shipments.length > 1 && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    paddingTop: 4,
+                    borderTop: "1px dashed #e5e7eb",
+                  }}
+                >
+                  <div
+                    style={{ color: "#16a34a", fontWeight: 500, fontSize: 13 }}
+                  >
+                    Total: {totalQuantity} units
+                  </div>
+                  <div style={{ color: "#666", fontSize: 12 }}>
+                    Shipping:{" "}
+                    <span style={{ fontWeight: 500, color: "#3b82f6" }}>
+                      {formatCurrency(totalShippingCents)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {shipments.length === 1 && totalShippingCents > 0 && (
+                <div style={{ color: "#666", marginTop: 4, fontSize: 12 }}>
                   Shipping:{" "}
                   <span style={{ fontWeight: 500, color: "#3b82f6" }}>
-                    {formatCurrency(shippingCostCents)}
+                    {formatCurrency(totalShippingCents)}
                   </span>
                 </div>
               )}
